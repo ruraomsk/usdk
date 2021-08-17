@@ -1,0 +1,3 @@
+Logger.c:19:6:Logger_Message	32	static
+Logger.c:33:7:Logger_Status	16	static
+Logger.c:45:6:LoggerLoop	200	static

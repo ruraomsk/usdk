@@ -1,0 +1,6 @@
+share.c:24:14:share_malloc	24	static
+share.c:28:13:share_free	16	static
+share.c:32:6:ShareSaveChange	40	static
+share.c:65:6:ShareInit	32	static
+share.c:98:13:ShareGetJson	32	static
+share.c:112:6:ShareSetJson	32	static
