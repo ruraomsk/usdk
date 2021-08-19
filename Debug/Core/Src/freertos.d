@@ -44,7 +44,8 @@ Core/Src/freertos.o: ../Core/Src/freertos.c \
  ../Drivers/STM32H7xx_HAL_Driver/Inc/stm32h7xx_hal_uart_ex.h \
  ../Middlewares/Third_Party/FreeRTOS/Source/CMSIS_RTOS_V2/cmsis_os.h \
  ../Middlewares/Third_Party/FreeRTOS/Source/CMSIS_RTOS_V2/cmsis_os2.h \
- /home/rura/STM32CubeIDE/workspace_1.7.0/STM32H743_Nucleo_ETH/DebugLogger/DebugLogger.h
+ /home/rura/STM32CubeIDE/workspace_1.7.0/STM32H743_Nucleo_ETH/DebugLogger/DebugLogger.h \
+ /home/rura/STM32CubeIDE/workspace_1.7.0/STM32H743_Nucleo_ETH/DeviceTime/DeviceTime.h
 
 ../Middlewares/Third_Party/FreeRTOS/Source/include/FreeRTOS.h:
 
@@ -139,3 +140,5 @@ Core/Src/freertos.o: ../Core/Src/freertos.c \
 ../Middlewares/Third_Party/FreeRTOS/Source/CMSIS_RTOS_V2/cmsis_os2.h:
 
 /home/rura/STM32CubeIDE/workspace_1.7.0/STM32H743_Nucleo_ETH/DebugLogger/DebugLogger.h:
+
+/home/rura/STM32CubeIDE/workspace_1.7.0/STM32H743_Nucleo_ETH/DeviceTime/DeviceTime.h:

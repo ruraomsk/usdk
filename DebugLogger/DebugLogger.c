@@ -27,13 +27,15 @@ void Debug_Message(int level, char *message) {
 	DebugLoggerMsg *newLog;
 	newLog = malloc(sizeof(DebugLoggerMsg));
 	memset(newLog->Buffer, 0, sizeof(newLog->Buffer));
-	if (strlen(message) < (sizeof(newLog->Buffer) - 1)) {
-		memcpy(newLog->Buffer, message, strlen(message));
-		newLog->Level = level;
-		newLog->time = HAL_GetTick();
-		osMessageQueuePut(DebugLoggerQueue, newLog, 0, 0);
-		free(newLog);
+	int len = strlen(message);
+	if (len > (sizeof(newLog->Buffer) - 1)) {
+		len = sizeof(newLog->Buffer) - 1;
 	}
+	memcpy(newLog->Buffer, message, len);
+	newLog->Level = level;
+	newLog->time = GetDeviceTime();
+	osMessageQueuePut(DebugLoggerQueue, newLog, 0, 0);
+	free(newLog);
 }
 char* Debuger_Status(int level) {
 	switch (level) {
@@ -54,20 +56,13 @@ void DebugLoggerLoop() {
 	udp = udp_new();
 	udp_connect(udp, &debugSetup.ipAddr, debugSetup.port);
 	ReadyLogger = 1;
-	Debug_Message(LOG_INFO, "Logger start");
+	Debug_Message(LOG_INFO, "Logger запущен");
 	/* Infinite loop */
 	for (;;) {
 		DebugLoggerMsg msg;
 		if (osMessageQueueGet(DebugLoggerQueue, &msg, NULL, 0) == osOK) {
-			int hour, minute, sec, msec;
-			msec = msg.time % 1000;
-			sec = (msg.time / 1000U) % 86400U;
-			hour = sec / 3600;
-			sec -= hour * 3600;
-			minute = sec / 60;
-			sec = sec % 60;
-			sprintf(LoggerBuffer, "%02d.%02d.%02d.%03d:%6s:%s\n\r", hour,
-					minute, sec, msec, Debuger_Status(msg.Level), msg.Buffer);
+			sprintf(LoggerBuffer, "%s:%6s:%s\n\r", TimeToString(msg.time),
+					Debuger_Status(msg.Level), msg.Buffer);
 			struct pbuf *udp_buffer = pbuf_alloc(PBUF_TRANSPORT,
 					strlen(LoggerBuffer), PBUF_RAM);
 			if (udp_buffer != NULL) {
@@ -80,10 +75,12 @@ void DebugLoggerLoop() {
 	}
 }
 void DebugReadSetup(void) {
-	JSON_Value *obj = ShareGetJson("debug");
-	debugSetup.port = (int) json_object_get_number(obj, "port");
-	sscanf(json_object_get_string(obj, "ip"), "%d.%d.%d.%d", &debugSetup.adr1,
-			&debugSetup.adr2, &debugSetup.adr3, &debugSetup.adr4);
+	JSON_Value *root = ShareGetJson("debug");
+	JSON_Object *object = json_value_get_object(root);
+	debugSetup.port = (int) json_object_get_number(object, "port");
+	sscanf(json_object_get_string(object, "ip"), "%d.%d.%d.%d",
+			&debugSetup.adr1, &debugSetup.adr2, &debugSetup.adr3,
+			&debugSetup.adr4);
 	IP_ADDR4(&debugSetup.ipAddr, debugSetup.adr1, debugSetup.adr2,
 			debugSetup.adr3, debugSetup.adr4);
 }

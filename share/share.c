@@ -12,10 +12,12 @@
 #include <stdio.h>
 
 #include "DebugLogger.h"
-static char *charts[] = { "debug", "base", "common", "transport" };
+static char *charts[] = { "debug", "tcpmain", "tcpsecond", "transport" };
 
-static char *values[] = { "{\"ip\":\"192.168.115.159\",\"port\":7777}", "{\"v\":0}",
-		"{}", "{}" };
+static char *values[] = { "{\"ip\":\"192.168.115.159\",\"port\":7777}",
+		"{\"ip\":\"192.168.115.159\",\"port\":1093,\"timeout\":100}",
+		"{\"ip\":\"192.168.115.159\",\"port\":1094,\"timeout\":100}",
+		"{}" };
 static osMutexId_t ShareMutex;
 
 extern int ReadyShare;
@@ -43,24 +45,24 @@ void ShareSaveChange() {
 					JSON_Value *value = ((ShareValue*) ep->data)->json_root;
 //					char *string =
 					json_serialize_to_buffer(value, ShareMessage, 80);
-					Debug_Message(LOG_INFO, ShareMessage);
+//					Debug_Message(LOG_INFO, ShareMessage);
 					// Save to EEPROM
 					count++;
 					((ShareValue*) ep->data)->changed=0;
 					e.data=ep->data;
 					hsearch(e, ENTER);
-					sprintf(ShareMessage, "save json %s", charts[i]);
-					Debug_Message(LOG_INFO, ShareMessage);
+//					sprintf(ShareMessage, "save json %s", charts[i]);
+//					Debug_Message(LOG_INFO, ShareMessage);
 				}
 			} else {
-				sprintf(ShareMessage, "chart %s is broken", charts[i]);
+				sprintf(ShareMessage, "Раздел %s испорчен", charts[i]);
 				Debug_Message(LOG_INFO, ShareMessage);
 			}
 		}
 	}
 	osMutexRelease(ShareMutex);
-	if(count) 	Debug_Message(LOG_INFO, "share table is saved");
-	else Debug_Message(LOG_INFO, "share table not changed");
+	if(count) 	Debug_Message(LOG_INFO, "share сохранено");
+	else Debug_Message(LOG_INFO, "share не изменялось");
 }
 void ShareInit() {
 	ENTRY e, *ep;
@@ -73,25 +75,25 @@ void ShareInit() {
 		value = malloc(sizeof(ShareValue));
 		e.key = charts[i];
 		//Load string
-		sprintf(ShareMessage, "string json %s", values[i]);
-		Debug_Message(LOG_INFO, ShareMessage);
+//		sprintf(ShareMessage, "string json %s", values[i]);
+//		Debug_Message(LOG_INFO, ShareMessage);
 		value->json_root = json_parse_string(values[i]);
 		if(value->json_root!=NULL){
-			json_serialize_to_buffer(value->json_root, &ShareMessage, 120);
-			Debug_Message(LOG_INFO, ShareMessage);
-			sprintf(ShareMessage, "load json %s", charts[i]);
-			Debug_Message(LOG_INFO, ShareMessage);
+//			json_serialize_to_buffer(value->json_root, &ShareMessage, 120);
+//			Debug_Message(LOG_INFO, ShareMessage);
+//			sprintf(ShareMessage, "load json %s", charts[i]);
+//			Debug_Message(LOG_INFO, ShareMessage);
 			value->changed = 0;
 			e.data = (void*) value;
 			ep = hsearch(e, ENTER);
 			if (ep == NULL) {
-				Debug_Message(LOG_FATAL, "entry failed");
+				Debug_Message(LOG_FATAL, "Ошибка словаря");
 				return;
 			}
 		}
 	}
 	ReadyShare = 1;
-	Debug_Message(LOG_INFO, "Share table is loaded");
+	Debug_Message(LOG_INFO, "Share загружена");
 }
 
 
@@ -122,7 +124,7 @@ void ShareSetJson(char *chart, JSON_Value *rvalue) {
 			value->json_root = rvalue;
 			e.data = (void*) value;
 			if (hsearch(e, ENTER) == NULL)
-				Debug_Message(LOG_FATAL, "entry failed");
+				Debug_Message(LOG_FATAL, "Ошибка словаря");
 		}
 		osMutexRelease(ShareMutex);
 	}

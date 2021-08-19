@@ -45,6 +45,7 @@ Core/Src/stm32h7xx_it.o: ../Core/Src/stm32h7xx_it.c ../Core/Inc/main.h \
  ../Middlewares/Third_Party/FreeRTOS/Source/include/list.h \
  ../Middlewares/Third_Party/FreeRTOS/Source/CMSIS_RTOS_V2/cmsis_os2.h \
  /home/rura/STM32CubeIDE/workspace_1.7.0/STM32H743_Nucleo_ETH/DebugLogger/DebugLogger.h \
+ /home/rura/STM32CubeIDE/workspace_1.7.0/STM32H743_Nucleo_ETH/DeviceTime/DeviceTime.h \
  ../Core/Inc/stm32h7xx_it.h
 
 ../Core/Inc/main.h:
@@ -140,5 +141,7 @@ Core/Src/stm32h7xx_it.o: ../Core/Src/stm32h7xx_it.c ../Core/Inc/main.h \
 ../Middlewares/Third_Party/FreeRTOS/Source/CMSIS_RTOS_V2/cmsis_os2.h:
 
 /home/rura/STM32CubeIDE/workspace_1.7.0/STM32H743_Nucleo_ETH/DebugLogger/DebugLogger.h:
+
+/home/rura/STM32CubeIDE/workspace_1.7.0/STM32H743_Nucleo_ETH/DeviceTime/DeviceTime.h:
 
 ../Core/Inc/stm32h7xx_it.h:

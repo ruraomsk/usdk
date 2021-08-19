@@ -23,6 +23,8 @@ SUBDIRS := \
 Core/Src \
 Core/Startup \
 DebugLogger \
+DeviceLogger \
+DeviceTime \
 Drivers/BSP/Components/lan8742 \
 Drivers/STM32H7xx_HAL_Driver/Src \
 LWIP/App \
@@ -39,6 +41,7 @@ Middlewares/Third_Party/LwIP/src/core/ipv6 \
 Middlewares/Third_Party/LwIP/src/netif \
 Middlewares/Third_Party/LwIP/src/netif/ppp \
 Middlewares/Third_Party/LwIP/system/OS \
+TCPMain \
 parson \
 share \
 

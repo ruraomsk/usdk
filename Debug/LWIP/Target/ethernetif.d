@@ -45,6 +45,7 @@ LWIP/Target/ethernetif.o: ../LWIP/Target/ethernetif.c ../Core/Inc/main.h \
  ../Middlewares/Third_Party/FreeRTOS/Source/include/list.h \
  ../Middlewares/Third_Party/FreeRTOS/Source/CMSIS_RTOS_V2/cmsis_os2.h \
  /home/rura/STM32CubeIDE/workspace_1.7.0/STM32H743_Nucleo_ETH/DebugLogger/DebugLogger.h \
+ /home/rura/STM32CubeIDE/workspace_1.7.0/STM32H743_Nucleo_ETH/DeviceTime/DeviceTime.h \
  ../Middlewares/Third_Party/LwIP/src/include/lwip/opt.h \
  ../LWIP/Target/lwipopts.h \
  ../Middlewares/Third_Party/LwIP/src/include/lwip/debug.h \
@@ -173,6 +174,8 @@ LWIP/Target/ethernetif.o: ../LWIP/Target/ethernetif.c ../Core/Inc/main.h \
 ../Middlewares/Third_Party/FreeRTOS/Source/CMSIS_RTOS_V2/cmsis_os2.h:
 
 /home/rura/STM32CubeIDE/workspace_1.7.0/STM32H743_Nucleo_ETH/DebugLogger/DebugLogger.h:
+
+/home/rura/STM32CubeIDE/workspace_1.7.0/STM32H743_Nucleo_ETH/DeviceTime/DeviceTime.h:
 
 ../Middlewares/Third_Party/LwIP/src/include/lwip/opt.h:
 

@@ -28,6 +28,9 @@
 #include <string.h>
 #include "share.h"
 #include "parson.h"
+#include "DeviceTime.h"
+#include "TCPMain.h"
+
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -60,10 +63,10 @@ const osThreadAttr_t DebugLogger_attributes = {
   .stack_size = 1024 * 4,
   .priority = (osPriority_t) osPriorityRealtime,
 };
-/* Definitions for ChangeShare */
-osThreadId_t ChangeShareHandle;
-const osThreadAttr_t ChangeShare_attributes = {
-  .name = "ChangeShare",
+/* Definitions for TCPMain */
+osThreadId_t TCPMainHandle;
+const osThreadAttr_t TCPMain_attributes = {
+  .name = "TCPMain",
   .stack_size = 1024 * 4,
   .priority = (osPriority_t) osPriorityRealtime,
 };
@@ -78,7 +81,7 @@ static void MX_GPIO_Init(void);
 static void MX_UART4_Init(void);
 void StartDefaultTask(void *argument);
 void StartDebugLogger(void *argument);
-void StartChangeShare(void *argument);
+void StartTCPMain(void *argument);
 
 /* USER CODE BEGIN PFP */
 
@@ -148,6 +151,7 @@ int main(void)
 
   /* USER CODE BEGIN RTOS_TIMERS */
 	/* start timers, add new ones, ... */
+  DeviceTimeInit();
   /* USER CODE END RTOS_TIMERS */
 
   /* USER CODE BEGIN RTOS_QUEUES */
@@ -164,8 +168,8 @@ int main(void)
   /* creation of DebugLogger */
   DebugLoggerHandle = osThreadNew(StartDebugLogger, NULL, &DebugLogger_attributes);
 
-  /* creation of ChangeShare */
-  ChangeShareHandle = osThreadNew(StartChangeShare, NULL, &ChangeShare_attributes);
+  /* creation of TCPMain */
+  TCPMainHandle = osThreadNew(StartTCPMain, NULL, &TCPMain_attributes);
 
   /* USER CODE BEGIN RTOS_THREADS */
 	/* add threads, ... */
@@ -182,6 +186,8 @@ int main(void)
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
 	while (1) {
+//		osDelay(DeviceTimeStep);
+//		UpdateDeviceTime();
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
@@ -369,7 +375,7 @@ void StartDefaultTask(void *argument)
   /* USER CODE BEGIN 5 */
   ReadyETH=1;
   ShareInit();
-  Debug_Message(LOG_INFO, "Start Default Task");
+  Debug_Message(LOG_INFO, "Запущена основная задача");
 
   for (;;) {
 	  osDelay(5000);
@@ -396,30 +402,22 @@ void StartDebugLogger(void *argument)
   /* USER CODE END StartDebugLogger */
 }
 
-/* USER CODE BEGIN Header_StartChangeShare */
+/* USER CODE BEGIN Header_StartTCPMain */
 /**
-* @brief Function implementing the ChangeShare thread.
+* @brief Function implementing the TCPMain thread.
 * @param argument: Not used
 * @retval None
 */
-/* USER CODE END Header_StartChangeShare */
-void StartChangeShare(void *argument)
+/* USER CODE END Header_StartTCPMain */
+void StartTCPMain(void *argument)
 {
-  /* USER CODE BEGIN StartChangeShare */
+  /* USER CODE BEGIN StartTCPMain */
   /* Infinite loop */
 	while (!ReadyShare) {
 		osDelay(100);
 	}
-  for(;;)
-  {
-	  JSON_Value* value=ShareGetJson("setup");
-	  if(value!=NULL){
-		  Debug_Message(LOG_INFO, "setup is modify");
-		  ShareSetJson("setup",value);
-	  }
-    osDelay(20000);
-  }
-  /* USER CODE END StartChangeShare */
+	TCPMainLoop();
+  /* USER CODE END StartTCPMain */
 }
 
 /* MPU Configuration */

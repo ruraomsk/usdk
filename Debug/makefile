@@ -11,6 +11,7 @@ RM := rm -rf
 -include sources.mk
 -include share/subdir.mk
 -include parson/subdir.mk
+-include TCPMain/subdir.mk
 -include Middlewares/Third_Party/LwIP/system/OS/subdir.mk
 -include Middlewares/Third_Party/LwIP/src/netif/ppp/subdir.mk
 -include Middlewares/Third_Party/LwIP/src/netif/subdir.mk
@@ -27,6 +28,8 @@ RM := rm -rf
 -include LWIP/App/subdir.mk
 -include Drivers/STM32H7xx_HAL_Driver/Src/subdir.mk
 -include Drivers/BSP/Components/lan8742/subdir.mk
+-include DeviceTime/subdir.mk
+-include DeviceLogger/subdir.mk
 -include DebugLogger/subdir.mk
 -include Core/Startup/subdir.mk
 -include Core/Src/subdir.mk

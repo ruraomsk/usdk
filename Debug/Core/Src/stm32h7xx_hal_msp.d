@@ -44,7 +44,8 @@ Core/Src/stm32h7xx_hal_msp.o: ../Core/Src/stm32h7xx_hal_msp.c \
  ../Middlewares/Third_Party/FreeRTOS/Source/include/task.h \
  ../Middlewares/Third_Party/FreeRTOS/Source/include/list.h \
  ../Middlewares/Third_Party/FreeRTOS/Source/CMSIS_RTOS_V2/cmsis_os2.h \
- /home/rura/STM32CubeIDE/workspace_1.7.0/STM32H743_Nucleo_ETH/DebugLogger/DebugLogger.h
+ /home/rura/STM32CubeIDE/workspace_1.7.0/STM32H743_Nucleo_ETH/DebugLogger/DebugLogger.h \
+ /home/rura/STM32CubeIDE/workspace_1.7.0/STM32H743_Nucleo_ETH/DeviceTime/DeviceTime.h
 
 ../Core/Inc/main.h:
 
@@ -139,3 +140,5 @@ Core/Src/stm32h7xx_hal_msp.o: ../Core/Src/stm32h7xx_hal_msp.c \
 ../Middlewares/Third_Party/FreeRTOS/Source/CMSIS_RTOS_V2/cmsis_os2.h:
 
 /home/rura/STM32CubeIDE/workspace_1.7.0/STM32H743_Nucleo_ETH/DebugLogger/DebugLogger.h:
+
+/home/rura/STM32CubeIDE/workspace_1.7.0/STM32H743_Nucleo_ETH/DeviceTime/DeviceTime.h:

@@ -11,7 +11,8 @@ share/share.o: ../share/share.c ../share/share.h \
  ../Middlewares/Third_Party/FreeRTOS/Source/include/list.h \
  ../Middlewares/Third_Party/FreeRTOS/Source/CMSIS_RTOS_V2/cmsis_os2.h \
  /home/rura/STM32CubeIDE/workspace_1.7.0/STM32H743_Nucleo_ETH/parson/parson.h \
- /home/rura/STM32CubeIDE/workspace_1.7.0/STM32H743_Nucleo_ETH/DebugLogger/DebugLogger.h
+ /home/rura/STM32CubeIDE/workspace_1.7.0/STM32H743_Nucleo_ETH/DebugLogger/DebugLogger.h \
+ /home/rura/STM32CubeIDE/workspace_1.7.0/STM32H743_Nucleo_ETH/DeviceTime/DeviceTime.h
 
 ../share/share.h:
 
@@ -40,3 +41,5 @@ share/share.o: ../share/share.c ../share/share.h \
 /home/rura/STM32CubeIDE/workspace_1.7.0/STM32H743_Nucleo_ETH/parson/parson.h:
 
 /home/rura/STM32CubeIDE/workspace_1.7.0/STM32H743_Nucleo_ETH/DebugLogger/DebugLogger.h:
+
+/home/rura/STM32CubeIDE/workspace_1.7.0/STM32H743_Nucleo_ETH/DeviceTime/DeviceTime.h:

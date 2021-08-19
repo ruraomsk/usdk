@@ -124,6 +124,7 @@ size_t        json_object_get_string_len(const JSON_Object *object, const char *
 JSON_Object * json_object_get_object (const JSON_Object *object, const char *name);
 JSON_Array  * json_object_get_array  (const JSON_Object *object, const char *name);
 double        json_object_get_number (const JSON_Object *object, const char *name); /* returns 0 on fail */
+
 int           json_object_get_boolean(const JSON_Object *object, const char *name); /* returns -1 on fail */
 
 /* dotget functions enable addressing values with dot notation in nested objects,
@@ -137,6 +138,7 @@ JSON_Object * json_object_dotget_object (const JSON_Object *object, const char *
 JSON_Array  * json_object_dotget_array  (const JSON_Object *object, const char *name);
 double        json_object_dotget_number (const JSON_Object *object, const char *name); /* returns 0 on fail */
 int           json_object_dotget_boolean(const JSON_Object *object, const char *name); /* returns -1 on fail */
+
 
 /* Functions to get available names */
 size_t        json_object_get_count   (const JSON_Object *object);

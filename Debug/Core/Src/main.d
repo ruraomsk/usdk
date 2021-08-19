@@ -45,6 +45,7 @@ Core/Src/main.o: ../Core/Src/main.c ../Core/Inc/main.h \
  ../Middlewares/Third_Party/FreeRTOS/Source/include/list.h \
  ../Middlewares/Third_Party/FreeRTOS/Source/CMSIS_RTOS_V2/cmsis_os2.h \
  /home/rura/STM32CubeIDE/workspace_1.7.0/STM32H743_Nucleo_ETH/DebugLogger/DebugLogger.h \
+ /home/rura/STM32CubeIDE/workspace_1.7.0/STM32H743_Nucleo_ETH/DeviceTime/DeviceTime.h \
  ../LWIP/App/lwip.h \
  ../Middlewares/Third_Party/LwIP/src/include/lwip/opt.h \
  ../LWIP/Target/lwipopts.h \
@@ -86,7 +87,8 @@ Core/Src/main.o: ../Core/Src/main.c ../Core/Inc/main.h \
  ../Middlewares/Third_Party/LwIP/src/include/lwip/prot/ip.h \
  ../Middlewares/Third_Party/LwIP/src/include/lwip/prot/udp.h \
  /home/rura/STM32CubeIDE/workspace_1.7.0/STM32H743_Nucleo_ETH/share/share.h \
- /home/rura/STM32CubeIDE/workspace_1.7.0/STM32H743_Nucleo_ETH/parson/parson.h
+ /home/rura/STM32CubeIDE/workspace_1.7.0/STM32H743_Nucleo_ETH/parson/parson.h \
+ /home/rura/STM32CubeIDE/workspace_1.7.0/STM32H743_Nucleo_ETH/TCPMain/TCPMain.h
 
 ../Core/Inc/main.h:
 
@@ -182,6 +184,8 @@ Core/Src/main.o: ../Core/Src/main.c ../Core/Inc/main.h \
 
 /home/rura/STM32CubeIDE/workspace_1.7.0/STM32H743_Nucleo_ETH/DebugLogger/DebugLogger.h:
 
+/home/rura/STM32CubeIDE/workspace_1.7.0/STM32H743_Nucleo_ETH/DeviceTime/DeviceTime.h:
+
 ../LWIP/App/lwip.h:
 
 ../Middlewares/Third_Party/LwIP/src/include/lwip/opt.h:
@@ -265,3 +269,5 @@ Core/Src/main.o: ../Core/Src/main.c ../Core/Inc/main.h \
 /home/rura/STM32CubeIDE/workspace_1.7.0/STM32H743_Nucleo_ETH/share/share.h:
 
 /home/rura/STM32CubeIDE/workspace_1.7.0/STM32H743_Nucleo_ETH/parson/parson.h:
+
+/home/rura/STM32CubeIDE/workspace_1.7.0/STM32H743_Nucleo_ETH/TCPMain/TCPMain.h:

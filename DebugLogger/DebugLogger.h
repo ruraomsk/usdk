@@ -2,6 +2,7 @@
 #define __LOGGER_H
 
 #include "cmsis_os.h"
+#include "DeviceTime.h"
 //#include "lwip.h"
 //#include "lwip/udp.h"
 
@@ -12,7 +13,7 @@ extern "C" {
 
 typedef struct {
 	int Level;
-	uint32_t time;
+	dev_time time;
 	char Buffer[128];
 } DebugLoggerMsg;
 void Debug_Message(int level,char *message);
