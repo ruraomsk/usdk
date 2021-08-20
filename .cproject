@@ -50,7 +50,6 @@
 									<listOptionValue builtIn="false" value="../Middlewares/Third_Party/FreeRTOS/Source/portable/GCC/ARM_CM4F"/>
 									<listOptionValue builtIn="false" value="../Drivers/CMSIS/Device/ST/STM32H7xx/Include"/>
 									<listOptionValue builtIn="false" value="../Drivers/CMSIS/Include"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/STM32H743_Nucleo_ETH/Logger}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/STM32H743_Nucleo_ETH/share}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/STM32H743_Nucleo_ETH/parson}&quot;"/>
 									<listOptionValue builtIn="false" value="../LWIP/App"/>

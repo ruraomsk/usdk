@@ -378,7 +378,8 @@ void StartDefaultTask(void *argument)
   Debug_Message(LOG_INFO, "Запущена основная задача");
 
   for (;;) {
-	  osDelay(5000);
+	  osDelay(1000);
+
 	  ShareSaveChange();
   }
   /* USER CODE END 5 */
@@ -416,7 +417,11 @@ void StartTCPMain(void *argument)
 	while (!ReadyShare) {
 		osDelay(100);
 	}
-	TCPMainLoop();
+	while(1){
+		Debug_Message(LOG_INFO, "Начинаем соединениеи с сервером");
+		TCPMainLoop();
+		osDelay(1000);
+	}
   /* USER CODE END StartTCPMain */
 }
 

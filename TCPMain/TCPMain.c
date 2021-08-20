@@ -1,7 +1,7 @@
 /*
  * TCPMain.c
  *
- *  Created on: Aug 19, 2021
+ *  Created on: 20 авг. 2021 г.
  *      Author: rura
  */
 
@@ -9,108 +9,80 @@
 #include "TCPMain.h"
 #include "DebugLogger.h"
 #include "parson.h"
+#include "sockets.h"
 
 struct {
-	ip_addr_t ipAddr;
 	int adr1, adr2, adr3, adr4;
 	unsigned int port;
 	unsigned int timeout;
 } TCPMainSetup;
 char TCPMainBuffer[MAX_LEN_TCP_MESSAGE];
-char *ptrMainBuffer=TCPMainBuffer;
+char *ptrMainBuffer = TCPMainBuffer;
 
-struct tcp_pcb *main_pcb;
 int ReadyMainConnect = 0;
-void main_client_connection_close(struct tcp_pcb *tpcb) {
-	/* remove callbacks */
-	tcp_arg(tpcb, NULL);
-	tcp_recv(tpcb, NULL);
-	tcp_err(tpcb, NULL);
-	/* close tcp connection */
-	tcp_close(tpcb);
-	ReadyMainConnect = 0;
+void tcpMainFirstString(){
+	sprintf(TCPMainBuffer,"{\"deviceinfo\":{\"id\":%d,\"onboard\":{\"GPRS\":true,\"GSM\":true,\"ETH\":true,\"USB\":true},\"soft\":{\"version\":\"versionsoftware\"}},\"kye\":\"open key string\"}",8888);
 }
-//Callback на ошибки сервера
-void main_server_error(void *arg, err_t err) {
-	LWIP_UNUSED_ARG(err);
-	Debug_Message(LOG_FATAL, "Ошибка сервера");
-	main_client_connection_close(main_pcb);
-
-}
-//Callback на прием от TCP
-err_t main_client_recv(void *arg, struct tcp_pcb *tpcb, struct pbuf *p,
-		err_t err) {
-	err_t ret_err;
-
-	/* Если передали пустой фрейм то это keepalive */
-	if (p == NULL) {
-		return ERR_OK;
-	}
-	/* else : a non empty frame was received from server but for some reason err != ERR_OK */
-	if (err != ERR_OK) {
-		/* free received pbuf*/
-		if (p != NULL) {
-			pbuf_free(p);
-		}
-		return err;
-	}
-	if((ptrMainBuffer+p->len)>(&TCPMainBuffer+MAX_LEN_TCP_MESSAGE-1)) {
-		Debug_Message(LOG_FATAL, "Нужно увеличить длину строки TCP");
-	}else {
-		memcpy(ptrMainBuffer,p->payload,p->len);
-		ptrMainBuffer+=p->len;
-		*ptrMainBuffer=0;
-	}
-	if (p->len >2) {
-		if(*(ptrMainBuffer-2)=='\n'&& *(ptrMainBuffer-1)=='\r') {
-			// Передача строки завершена
-			*(ptrMainBuffer-2)=0;
-			ptrMainBuffer=TCPMainBuffer;
-			tcp_recved(tpcb, p->tot_len);
-			pbuf_free(p);
-//			mainRecieve();
-			return ERR_OK;
-		}
-	}
-	tcp_recved(tpcb, p->tot_len);
-	pbuf_free(p);
-
-	/* Acknowledge data reception */
-	return ERR_OK;
-}
-
-//Callback на соединение с сервером
-err_t main_client_connected(void *arg, struct tcp_pcb *tpcb, err_t err) {
-	if (err == ERR_OK) {
-		tcp_arg(tpcb, NULL);
-		/* initialize LwIP tcp_recv callback function */
-		tcp_recv(tpcb, main_client_recv);
-		tcp_err(tpcb, main_server_error);
-		ReadyMainConnect = 1;
-		Debug_Message(LOG_INFO, "Подключение по основному каналу успешно");
-		return ERR_OK;
-	} else {
-		/* close connection */
-		Debug_Message(LOG_ERROR, "Подключение по основному каналу нет ответа");
-		main_client_connection_close(tpcb);
-	}
-	return err;
+void tcpMainNextString(){
+	sprintf(TCPMainBuffer,"Ready");
 }
 void TCPMainLoop(void) {
 	TCPMainReadSetup();
-	main_pcb = tcp_new();
-	err_t err;
-	if (main_pcb != NULL) {
-		/* connect to destination address/port */
-		err=tcp_connect(main_pcb, &TCPMainSetup.ipAddr, TCPMainSetup.port,
-				main_client_connected);
-
-	} else {
-		Debug_Message(LOG_FATAL, "Нет памяти для TCP");
+	int addr_family = 0;
+	int ip_protocol = 0;
+	int err;
+	struct sockaddr_in srv_addr,local;
+	sprintf(TCPMainBuffer, "%d.%d.%d.%d", TCPMainSetup.adr1, TCPMainSetup.adr2,
+			TCPMainSetup.adr3, TCPMainSetup.adr4);
+	inet_aton(TCPMainBuffer, &srv_addr.sin_addr.s_addr);
+	srv_addr.sin_family = AF_INET;
+	srv_addr.sin_port = htons(TCPMainSetup.port);
+	int sock = socket(AF_INET, SOCK_STREAM, 0);
+	if (sock < 0) {
+		Debug_Message(LOG_ERROR, "Не могу создать сокет");
 		return;
 	}
-	while (!ReadyMainConnect) {
+	err = connect(sock, (struct sockaddr*) &srv_addr,
+			sizeof(struct sockaddr_in));
+	if (err != 0) {
+		Debug_Message(LOG_ERROR, "Нет соединения с сервером");
+		return;
+	}
+	tcpMainFirstString();
+	strcat(TCPMainBuffer,"\n\r");
+	err = send(sock, TCPMainBuffer, strlen(TCPMainBuffer), 0);
+	if (err < 0) {
+		Debug_Message(LOG_ERROR, "Не смог передать стартовую строку");
+		return;
+	}
+
+	while (1) {
+
+		int len = recv(sock, TCPMainBuffer, sizeof(TCPMainBuffer) - 1, 0);
+		// Error occurred during receiving
+		if (len < 0) {
+			break;
+		}
+		// Data received
+		else {
+			TCPMainBuffer[len] = 0; // Null-terminate whatever we received and treat like a string
+		}
+		Debug_Message(LOG_INFO, TCPMainBuffer);
+		tcpMainNextString();
+		strcat(TCPMainBuffer,"\n\r");
+		int err = send(sock, TCPMainBuffer, strlen(TCPMainBuffer), 0);
+		if (err < 0) {
+			Debug_Message(LOG_ERROR, "Не смог передать строку");
+			return;
+		}
+
 		osDelay(100);
+	}
+
+	if (sock != -1) {
+		Debug_Message(LOG_ERROR, "Разорвано соединение с сервером");
+		shutdown(sock, 0);
+		close(sock);
 	}
 
 }
@@ -123,8 +95,6 @@ void TCPMainReadSetup(void) {
 	sscanf(json_object_get_string(object, "ip"), "%d.%d.%d.%d",
 			&TCPMainSetup.adr1, &TCPMainSetup.adr2, &TCPMainSetup.adr3,
 			&TCPMainSetup.adr4);
-	IP_ADDR4(&TCPMainSetup.ipAddr, TCPMainSetup.adr1, TCPMainSetup.adr2,
-			TCPMainSetup.adr3, TCPMainSetup.adr4);
 }
 
 void TCPMainWriteSetup(void) {
