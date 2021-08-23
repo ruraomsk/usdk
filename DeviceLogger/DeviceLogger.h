@@ -29,7 +29,7 @@ typedef struct {
 
 void DeviceLog(char subsytem,const char*message);
 void DeviceLogInit(void);
-JSON_Object* DeviceLogToJSON(void);
+JSON_Value* DeviceLogToJSON(void);
 
 
 #endif /* DEVICELOGGER_H_ */

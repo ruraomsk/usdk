@@ -11,6 +11,7 @@ RM := rm -rf
 -include sources.mk
 -include share/subdir.mk
 -include parson/subdir.mk
+-include libmodbus/subdir.mk
 -include TCPMain/subdir.mk
 -include Middlewares/Third_Party/LwIP/system/OS/subdir.mk
 -include Middlewares/Third_Party/LwIP/src/netif/ppp/subdir.mk

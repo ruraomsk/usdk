@@ -12,6 +12,8 @@
 #include "cmsis_os.h"
 #include "lwip.h"
 #include "parson.h"
+#include "udp.h"
+#include "share.h"
 
 extern osMessageQueueId_t DebugLoggerQueue;
 extern int ReadyLogger;
@@ -88,7 +90,6 @@ void DebugReadSetup(void) {
 void DebugWriteSetup(void) {
 	JSON_Value *root_value = json_value_init_object();
 	JSON_Object *root_object = json_value_get_object(root_value);
-	char *serialized_string = NULL;
 	sprintf(LoggerBuffer, "%d.%d.%d.%d", debugSetup.adr1, debugSetup.adr2,
 			debugSetup.adr3, debugSetup.adr4);
 	json_object_set_string(root_object, "ip", LoggerBuffer);

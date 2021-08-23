@@ -62,7 +62,7 @@ void DeviceLog(char subsytem,const char*message){
 	}
 }
 
-JSON_Object* DeviceLogToJSON(){
+JSON_Value* DeviceLogToJSON(){
 	JSON_Value* result=NULL;
 	return result;
 }

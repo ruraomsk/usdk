@@ -9,14 +9,15 @@
 #include "parson.h"
 #include <search.h>
 #include <string.h>
+#include <stdlib.h>
 #include <stdio.h>
 
 #include "DebugLogger.h"
 static char *charts[] = { "debug", "tcpmain", "tcpsecond", "transport" };
 
 static char *values[] = { "{\"ip\":\"192.168.115.159\",\"port\":7777}",
-		"{\"ip\":\"192.168.115.159\",\"port\":1093,\"timeout\":100}",
-		"{\"ip\":\"192.168.115.159\",\"port\":1094,\"timeout\":100}",
+		"{\"ip\":\"192.168.115.159\",\"port\":1093,\"timeoutread\":10,\"timeoutwrite\":1,\"timeoutconn\":5}",
+		"{\"ip\":\"192.168.115.159\",\"port\":1094,\"timeoutread\":1,\"timeoutwrite\":1,\"timeoutconn\":5}",
 		"{}" };
 static osMutexId_t ShareMutex;
 
@@ -61,8 +62,12 @@ void ShareSaveChange() {
 		}
 	}
 	osMutexRelease(ShareMutex);
-	if(count) 	Debug_Message(LOG_INFO, "share сохранено");
-	else Debug_Message(LOG_INFO, "share не изменялось");
+	if(count) {
+		Debug_Message(LOG_INFO, "share сохранено");
+	}
+	else{
+//		Debug_Message(LOG_INFO, "share не изменялось");
+	}
 }
 void ShareInit() {
 	ENTRY e, *ep;

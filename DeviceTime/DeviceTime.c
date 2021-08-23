@@ -6,6 +6,7 @@
  */
 #include "main.h"
 #include "DeviceTime.h"
+#include <stdio.h>
 
 static dev_time DeviceTimer;
 static char DeviceTimeBuffer[20];
@@ -30,8 +31,8 @@ char* TimeToString(dev_time time){
 		sec = sec % 60;
 		sprintf(DeviceTimeBuffer, "%02d.%02d.%02d.%03d", hour, minute, sec, msec);
 	} else {
-		char temp[]="ERROR!\0";
-		return temp;
+//		char temp[]="ERROR!\0";
+		return "ERROR!\0";
 	}
 	osMutexRelease(TimerMutex);
 	return DeviceTimeBuffer;

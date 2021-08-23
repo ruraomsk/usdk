@@ -42,6 +42,7 @@ Middlewares/Third_Party/LwIP/src/netif \
 Middlewares/Third_Party/LwIP/src/netif/ppp \
 Middlewares/Third_Party/LwIP/system/OS \
 TCPMain \
+libmodbus \
 parson \
 share \
 

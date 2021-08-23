@@ -6,6 +6,7 @@
  */
 
 #include "RingBuffer.h"
+#include <string.h>
 
 RingBuffer* newRingBuffer(unsigned long int capacity,int elementsize) {
 	void* mem = malloc(capacity * elementsize);
