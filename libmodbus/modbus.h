@@ -8,36 +8,14 @@
 #define MODBUS_H
 
 /* Add this for macros that defined unix flavor */
-#if (defined(__unix__) || defined(unix)) && !defined(USG)
-#include <sys/param.h>
-#endif
-
-#ifndef _MSC_VER
 #include <stdint.h>
-#else
-#include "stdint.h"
-#endif
 
 #include "modbus-version.h"
 
-#if defined(_MSC_VER)
-# if defined(DLLBUILD)
-/* define DLLBUILD when building the DLL */
-#  define MODBUS_API __declspec(dllexport)
-# else
-#  define MODBUS_API __declspec(dllimport)
-# endif
-#else
 # define MODBUS_API
-#endif
 
-#ifdef  __cplusplus
-# define MODBUS_BEGIN_DECLS  extern "C" {
-# define MODBUS_END_DECLS    }
-#else
 # define MODBUS_BEGIN_DECLS
 # define MODBUS_END_DECLS
-#endif
 
 MODBUS_BEGIN_DECLS
 
@@ -176,6 +154,8 @@ typedef enum
     MODBUS_ERROR_RECOVERY_PROTOCOL      = (1<<2)
 } modbus_error_recovery_mode;
 
+void init_modbus_system(void);  //Вызываем один раз при инициализации системы
+
 MODBUS_API int modbus_set_slave(modbus_t* ctx, int slave);
 MODBUS_API int modbus_get_slave(modbus_t* ctx);
 MODBUS_API int modbus_set_error_recovery(modbus_t *ctx, modbus_error_recovery_mode error_recovery);
@@ -290,7 +270,6 @@ MODBUS_API void modbus_set_float_badc(float f, uint16_t *dest);
 MODBUS_API void modbus_set_float_cdab(float f, uint16_t *dest);
 
 #include "modbus-tcp.h"
-#include "modbus-rtu.h"
 
 MODBUS_END_DECLS
 

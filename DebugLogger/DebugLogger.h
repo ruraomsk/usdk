@@ -26,6 +26,7 @@ void DebugWriteSetup(void);
 
 #define LOG_FATAL 0
 #define LOG_ERROR 1
+#define LOG_DEBUG 2
 #define LOG_INFO  9
 
 

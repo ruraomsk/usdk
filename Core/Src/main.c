@@ -30,6 +30,9 @@
 #include "parson.h"
 #include "DeviceTime.h"
 #include "TCPMain.h"
+#include "ServerModbusTCP.h"
+#include "ClientModbusTCP.h"
+#include "modbus.h"
 
 /* USER CODE END Includes */
 
@@ -40,6 +43,11 @@
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
+#define STEP_MAIN_TCP 			60000
+#define STEP_SHARE 				10000
+#define STEP_SERVER_MODBUS_TCP 	1000
+#define STEP_CLIENT_MODBUS_TCP 	1000
+
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -72,6 +80,20 @@ const osThreadAttr_t TCPMain_attributes = {
   .stack_size = 1024 * 4,
   .priority = (osPriority_t) osPriorityRealtime,
 };
+/* Definitions for ServerModbusTCP */
+osThreadId_t ServerModbusTCPHandle;
+const osThreadAttr_t ServerModbusTCP_attributes = {
+  .name = "ServerModbusTCP",
+  .stack_size = 256 * 4,
+  .priority = (osPriority_t) osPriorityLow,
+};
+/* Definitions for ClientModbusTCP */
+osThreadId_t ClientModbusTCPHandle;
+const osThreadAttr_t ClientModbusTCP_attributes = {
+  .name = "ClientModbusTCP",
+  .stack_size = 256 * 4,
+  .priority = (osPriority_t) osPriorityLow,
+};
 /* USER CODE BEGIN PV */
 
 /* USER CODE END PV */
@@ -84,6 +106,8 @@ static void MX_UART4_Init(void);
 void StartDefaultTask(void *argument);
 void StartDebugLogger(void *argument);
 void StartTCPMain(void *argument);
+void StartServerModbusTCP(void *argument);
+void StartClientModbusTCP(void *argument);
 
 /* USER CODE BEGIN PFP */
 
@@ -172,6 +196,12 @@ int main(void)
 
   /* creation of TCPMain */
   TCPMainHandle = osThreadNew(StartTCPMain, NULL, &TCPMain_attributes);
+
+  /* creation of ServerModbusTCP */
+  ServerModbusTCPHandle = osThreadNew(StartServerModbusTCP, NULL, &ServerModbusTCP_attributes);
+
+  /* creation of ClientModbusTCP */
+  ClientModbusTCPHandle = osThreadNew(StartClientModbusTCP, NULL, &ClientModbusTCP_attributes);
 
   /* USER CODE BEGIN RTOS_THREADS */
 	/* add threads, ... */
@@ -399,7 +429,7 @@ void StartDefaultTask(void *argument)
   Debug_Message(LOG_INFO, "Запущена основная задача");
 
   for (;;) {
-	  osDelay(1000);
+	  osDelay(STEP_SHARE);
 
 	  ShareSaveChange();
   }
@@ -441,9 +471,55 @@ void StartTCPMain(void *argument)
 	while(1){
 		Debug_Message(LOG_INFO, "Начинаем соединение с сервером");
 		TCPMainLoop();
-		osDelay(1000);
+		osDelay(STEP_MAIN_TCP);
 	}
   /* USER CODE END StartTCPMain */
+}
+
+/* USER CODE BEGIN Header_StartServerModbusTCP */
+/**
+* @brief Function implementing the ServerModbusTCP thread.
+* @param argument: Not used
+* @retval None
+*/
+/* USER CODE END Header_StartServerModbusTCP */
+void StartServerModbusTCP(void *argument)
+{
+  /* USER CODE BEGIN StartServerModbusTCP */
+  /* Infinite loop */
+	while (!ReadyShare) {
+		osDelay(100);
+	}
+	init_modbus_system();
+	while(1){
+		Debug_Message(LOG_INFO, "Запускаем сервер Modbus");
+		ServerModbusTCPLoop();
+		osDelay(STEP_SERVER_MODBUS_TCP);
+	}
+  /* USER CODE END StartServerModbusTCP */
+}
+
+/* USER CODE BEGIN Header_StartClientModbusTCP */
+/**
+* @brief Function implementing the ClientModbusTCP thread.
+* @param argument: Not used
+* @retval None
+*/
+/* USER CODE END Header_StartClientModbusTCP */
+void StartClientModbusTCP(void *argument)
+{
+  /* USER CODE BEGIN StartClientModbusTCP */
+  /* Infinite loop */
+	while (!ReadyShare) {
+		osDelay(100);
+	}
+	init_modbus_system();
+	while(1){
+		Debug_Message(LOG_INFO, "Запускаем клиента Modbus");
+		ClientModbusTCPLoop();
+		osDelay(STEP_CLIENT_MODBUS_TCP);
+	}
+  /* USER CODE END StartClientModbusTCP */
 }
 
 /* MPU Configuration */

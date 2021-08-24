@@ -7,14 +7,8 @@
 #ifndef MODBUS_PRIVATE_H
 #define MODBUS_PRIVATE_H
 
-#ifndef _MSC_VER
 # include <stdint.h>
 # include <sys/time.h>
-#else
-# include "stdint.h"
-# include <time.h>
-typedef int ssize_t;
-#endif
 #include <sys/types.h>
 #include "config.h"
 

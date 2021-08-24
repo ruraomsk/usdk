@@ -1,5 +1,5 @@
 DebugLogger.c:28:6:Debug_Message	24	static
 DebugLogger.c:42:7:Debuger_Status	16	static
-DebugLogger.c:54:6:DebugLoggerLoop	168	static
-DebugLogger.c:79:6:DebugReadSetup	24	static
-DebugLogger.c:90:6:DebugWriteSetup	24	static
+DebugLogger.c:56:6:DebugLoggerLoop	168	static
+DebugLogger.c:81:6:DebugReadSetup	24	static
+DebugLogger.c:92:6:DebugWriteSetup	24	static

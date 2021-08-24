@@ -6,35 +6,18 @@
 
 #include <stdlib.h>
 
-#ifndef _MSC_VER
 #  include <stdint.h>
-#else
-#  include "stdint.h"
-#endif
 
 #include <string.h>
 #include <assert.h>
 
-#if defined(_WIN32)
-#  include <winsock2.h>
-#else
 #  include <arpa/inet.h>
-#endif
 
 #include "config.h"
 
 #include "modbus.h"
 
-#if defined(HAVE_BYTESWAP_H)
-#  include <byteswap.h>
-#endif
 
-#if defined(__APPLE__)
-#  include <libkern/OSByteOrder.h>
-#  define bswap_16 OSSwapInt16
-#  define bswap_32 OSSwapInt32
-#  define bswap_64 OSSwapInt64
-#endif
 
 #if defined(__GNUC__)
 #  define GCC_VERSION (__GNUC__ * 100 + __GNUC_MINOR__ * 10)
@@ -49,26 +32,7 @@
 #  endif
 #endif
 
-#if defined(_MSC_VER) && (_MSC_VER >= 1400)
-#  define bswap_32 _byteswap_ulong
-#  define bswap_16 _byteswap_ushort
-#endif
 
-#if !defined(bswap_16)
-#  warning "Fallback on C functions for bswap_16"
-static inline uint16_t bswap_16(uint16_t x)
-{
-    return (x >> 8) | (x << 8);
-}
-#endif
-
-#if !defined(bswap_32)
-#  warning "Fallback on C functions for bswap_32"
-static inline uint32_t bswap_32(uint32_t x)
-{
-    return (bswap_16(x & 0xffff) << 16) | (bswap_16(x >> 16));
-}
-#endif
 
 /* Sets many bits from a single byte value (all 8 bits of the byte value are
    set) */

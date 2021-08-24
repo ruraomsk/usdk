@@ -45,6 +45,8 @@ char* Debuger_Status(int level) {
 		return "ERROR";
 	case LOG_FATAL:
 		return "FATAL";
+	case LOG_DEBUG:
+		return "DEBUG";
 	case LOG_INFO:
 		return "INFO ";
 	default:

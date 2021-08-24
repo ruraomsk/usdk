@@ -47,7 +47,7 @@
 #define HAVE_LIMITS_H 1
 
 /* Define to 1 if you have the <linux/serial.h> header file. */
-#define HAVE_LINUX_SERIAL_H 1
+//#define HAVE_LINUX_SERIAL_H 1
 
 /* Define to 1 if you have the <memory.h> header file. */
 #define HAVE_MEMORY_H 1

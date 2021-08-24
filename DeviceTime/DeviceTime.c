@@ -40,3 +40,7 @@ char* TimeToString(dev_time time){
 void UpdateDeviceTime(void){
 	DeviceTimer=HAL_GetTick();
 }
+int nanosleep (const struct timespec *tw, struct timespec *tr){
+	unsigned long int delay=((unsigned long int )tw->tv_sec)*1000UL+((unsigned long int )tw->tv_nsec/1000UL);
+	return osDelay(delay);
+}

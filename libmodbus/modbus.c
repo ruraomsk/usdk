@@ -20,6 +20,8 @@
 
 #include "config.h"
 
+#include "DebugLogger.h"
+
 #include "modbus.h"
 #include "modbus-private.h"
 
@@ -78,34 +80,40 @@ const char *modbus_strerror(int errnum) {
     }
 }
 
+static char modbus_buffer[128];
+static osMutexId_t ModbusMutex;
+void init_modbus_system(void){
+	ModbusMutex=osMutexNew(NULL);
+	Debug_Message(LOG_INFO, "Подcистема ModBus инициализирована");
+}
 void _error_print(modbus_t *ctx, const char *context)
 {
-    if (ctx->debug) {
-        fprintf(stderr, "ERROR %s", modbus_strerror(errno));
-        if (context != NULL) {
-            fprintf(stderr, ": %s\n", context);
-        } else {
-            fprintf(stderr, "\n");
-        }
-    }
+	if (osMutexAcquire(ModbusMutex, osWaitForever) == osOK) {
+	    if (ctx->debug) {
+
+	        if (context != NULL) {
+		        sprintf(modbus_buffer, "ERROR %s : %s", modbus_strerror(errno),context);
+	        } else {
+		        sprintf(modbus_buffer, "ERROR %s ", modbus_strerror(errno));
+	        }
+	        Debug_Message(LOG_ERROR, modbus_buffer);
+	    }
+		osMutexRelease(ModbusMutex);
+	}
+
 }
 
 static void _sleep_response_timeout(modbus_t *ctx)
 {
     /* Response timeout is always positive */
-#ifdef _WIN32
-    /* usleep doesn't exist on Windows */
-    Sleep((ctx->response_timeout.tv_sec * 1000) +
-          (ctx->response_timeout.tv_usec / 1000));
-#else
     /* usleep source code */
     struct timespec request, remaining;
     request.tv_sec = ctx->response_timeout.tv_sec;
     request.tv_nsec = ((long int)ctx->response_timeout.tv_usec) * 1000;
+
     while (nanosleep(&request, &remaining) == -1 && errno == EINTR) {
         request = remaining;
     }
-#endif
 }
 
 int modbus_flush(modbus_t *ctx)
@@ -120,7 +128,7 @@ int modbus_flush(modbus_t *ctx)
     rc = ctx->backend->flush(ctx);
     if (rc != -1 && ctx->debug) {
         /* Not all backends are able to return the number of bytes flushed */
-        printf("Bytes flushed (%d)\n", rc);
+//        printf("Bytes flushed (%d)\n", rc);
     }
     return rc;
 }
@@ -166,14 +174,13 @@ static unsigned int compute_response_length_from_request(modbus_t *ctx, uint8_t 
 static int send_msg(modbus_t *ctx, uint8_t *msg, int msg_length)
 {
     int rc;
-    int i;
 
     msg_length = ctx->backend->send_msg_pre(msg, msg_length);
 
     if (ctx->debug) {
-        for (i = 0; i < msg_length; i++)
-            printf("[%.2X]", msg[i]);
-        printf("\n");
+//        for (i = 0; i < msg_length; i++)
+//            printf("[%.2X]", msg[i]);
+//        printf("\n");
     }
 
     /* In recovery mode, the write command will be issued until to be
@@ -349,9 +356,9 @@ int _modbus_receive_msg(modbus_t *ctx, uint8_t *msg, msg_type_t msg_type)
 
     if (ctx->debug) {
         if (msg_type == MSG_INDICATION) {
-            printf("Waiting for an indication...\n");
+            Debug_Message(LOG_INFO,"Waiting for an indication...");
         } else {
-            printf("Waiting for a confirmation...\n");
+        	Debug_Message(LOG_INFO,"Waiting for a confirmation...");
         }
     }
 
@@ -424,9 +431,9 @@ int _modbus_receive_msg(modbus_t *ctx, uint8_t *msg, msg_type_t msg_type)
 
         /* Display the hex code of each character received */
         if (ctx->debug) {
-            int i;
-            for (i=0; i < rc; i++)
-                printf("<%.2X>", msg[msg_length + i]);
+//            int i;
+//            for (i=0; i < rc; i++)
+//                printf("<%.2X>", msg[msg_length + i]);
         }
 
         /* Sums bytes received */
@@ -474,7 +481,7 @@ int _modbus_receive_msg(modbus_t *ctx, uint8_t *msg, msg_type_t msg_type)
     }
 
     if (ctx->debug)
-        printf("\n");
+//        printf("\n");
 
     return ctx->backend->check_integrity(ctx, msg, msg_length);
 }
@@ -560,9 +567,13 @@ static int check_confirmation(modbus_t *ctx, uint8_t *req,
         /* Check function code */
         if (function != req[offset]) {
             if (ctx->debug) {
-                fprintf(stderr,
-                        "Received function not corresponding to the request (0x%X != 0x%X)\n",
-                        function, req[offset]);
+            	if (osMutexAcquire(ModbusMutex, osWaitForever) == osOK) {
+                    sprintf(modbus_buffer,
+                            "Received function not corresponding to the request (0x%X != 0x%X)",
+                            function, req[offset]);
+                    Debug_Message(LOG_INFO, modbus_buffer);
+            		osMutexRelease(ModbusMutex);
+            	}
             }
             if (ctx->error_recovery & MODBUS_ERROR_RECOVERY_PROTOCOL) {
                 _sleep_response_timeout(ctx);
@@ -609,9 +620,13 @@ static int check_confirmation(modbus_t *ctx, uint8_t *req,
             rc = rsp_nb_value;
         } else {
             if (ctx->debug) {
-                fprintf(stderr,
-                        "Quantity not corresponding to the request (%d != %d)\n",
-                        rsp_nb_value, req_nb_value);
+            	if (osMutexAcquire(ModbusMutex, osWaitForever) == osOK) {
+                    sprintf(modbus_buffer,
+                            "Quantity not corresponding to the request (%d != %d)",
+                            rsp_nb_value, req_nb_value);
+                    Debug_Message(LOG_INFO, modbus_buffer);
+            		osMutexRelease(ModbusMutex);
+            	}
             }
 
             if (ctx->error_recovery & MODBUS_ERROR_RECOVERY_PROTOCOL) {
@@ -624,9 +639,13 @@ static int check_confirmation(modbus_t *ctx, uint8_t *req,
         }
     } else {
         if (ctx->debug) {
-            fprintf(stderr,
-                    "Message length not corresponding to the computed length (%d != %d)\n",
-                    rsp_length, rsp_length_computed);
+        	if (osMutexAcquire(ModbusMutex, osWaitForever) == osOK) {
+                sprintf(modbus_buffer,
+                        "Message length not corresponding to the computed length (%d != %d)",
+                        rsp_length, rsp_length_computed);
+                Debug_Message(LOG_INFO, modbus_buffer);
+        		osMutexRelease(ModbusMutex);
+        	}
         }
         if (ctx->error_recovery & MODBUS_ERROR_RECOVERY_PROTOCOL) {
             _sleep_response_timeout(ctx);
@@ -919,7 +938,7 @@ int modbus_reply(modbus_t *ctx, const uint8_t *req,
         break;
     case MODBUS_FC_READ_EXCEPTION_STATUS:
         if (ctx->debug) {
-            fprintf(stderr, "FIXME Not implemented\n");
+            Debug_Message(LOG_ERROR, "FIXME Not implemented\n");
         }
         errno = ENOPROTOOPT;
         return -1;
@@ -1094,9 +1113,13 @@ int modbus_read_bits(modbus_t *ctx, int addr, int nb, uint8_t *dest)
 
     if (nb > MODBUS_MAX_READ_BITS) {
         if (ctx->debug) {
-            fprintf(stderr,
-                    "ERROR Too many bits requested (%d > %d)\n",
-                    nb, MODBUS_MAX_READ_BITS);
+        	if(osMutexAcquire(ModbusMutex,osWaitForever )==osOK){
+                sprintf(modbus_buffer,
+                        "ERROR Too many bits requested (%d > %d)",
+                        nb, MODBUS_MAX_READ_BITS);
+            	Debug_Message(LOG_ERROR, modbus_buffer);
+            	osMutexRelease(ModbusMutex);
+        	}
         }
         errno = EMBMDATA;
         return -1;
@@ -1123,9 +1146,13 @@ int modbus_read_input_bits(modbus_t *ctx, int addr, int nb, uint8_t *dest)
 
     if (nb > MODBUS_MAX_READ_BITS) {
         if (ctx->debug) {
-            fprintf(stderr,
-                    "ERROR Too many discrete inputs requested (%d > %d)\n",
-                    nb, MODBUS_MAX_READ_BITS);
+        	if(osMutexAcquire(ModbusMutex,osWaitForever )==osOK){
+                sprintf(modbus_buffer,
+                        "ERROR Too many discrete inputs requested (%d > %d)",
+                        nb, MODBUS_MAX_READ_BITS);
+            	Debug_Message(LOG_ERROR, modbus_buffer);
+            	osMutexRelease(ModbusMutex);
+        	}
         }
         errno = EMBMDATA;
         return -1;
@@ -1150,9 +1177,13 @@ static int read_registers(modbus_t *ctx, int function, int addr, int nb,
 
     if (nb > MODBUS_MAX_READ_REGISTERS) {
         if (ctx->debug) {
-            fprintf(stderr,
-                    "ERROR Too many registers requested (%d > %d)\n",
-                    nb, MODBUS_MAX_READ_REGISTERS);
+        	if(osMutexAcquire(ModbusMutex,osWaitForever )==osOK){
+                sprintf(modbus_buffer,
+                        "ERROR Too many registers requested (%d > %d)",
+                        nb, MODBUS_MAX_READ_REGISTERS);
+            	Debug_Message(LOG_ERROR, modbus_buffer);
+            	osMutexRelease(ModbusMutex);
+        	}
         }
         errno = EMBMDATA;
         return -1;
@@ -1198,9 +1229,13 @@ int modbus_read_registers(modbus_t *ctx, int addr, int nb, uint16_t *dest)
 
     if (nb > MODBUS_MAX_READ_REGISTERS) {
         if (ctx->debug) {
-            fprintf(stderr,
-                    "ERROR Too many registers requested (%d > %d)\n",
-                    nb, MODBUS_MAX_READ_REGISTERS);
+        	if(osMutexAcquire(ModbusMutex,osWaitForever )==osOK){
+                sprintf(modbus_buffer,
+                        "ERROR Too many registers requested (%d > %d)",
+                        nb, MODBUS_MAX_READ_REGISTERS);
+            	Debug_Message(LOG_ERROR, modbus_buffer);
+            	osMutexRelease(ModbusMutex);
+        	}
         }
         errno = EMBMDATA;
         return -1;
@@ -1223,9 +1258,14 @@ int modbus_read_input_registers(modbus_t *ctx, int addr, int nb,
     }
 
     if (nb > MODBUS_MAX_READ_REGISTERS) {
-        fprintf(stderr,
-                "ERROR Too many input registers requested (%d > %d)\n",
-                nb, MODBUS_MAX_READ_REGISTERS);
+
+    	if(osMutexAcquire(ModbusMutex,osWaitForever )==osOK){
+        	sprintf(modbus_buffer,
+                    "ERROR Too many input registers requested (%d > %d)",
+                    nb, MODBUS_MAX_READ_REGISTERS);
+        	Debug_Message(LOG_ERROR, modbus_buffer);
+        	osMutexRelease(ModbusMutex);
+    	}
         errno = EMBMDATA;
         return -1;
     }
@@ -1307,8 +1347,12 @@ int modbus_write_bits(modbus_t *ctx, int addr, int nb, const uint8_t *src)
 
     if (nb > MODBUS_MAX_WRITE_BITS) {
         if (ctx->debug) {
-            fprintf(stderr, "ERROR Writing too many bits (%d > %d)\n",
-                    nb, MODBUS_MAX_WRITE_BITS);
+        	if(osMutexAcquire(ModbusMutex,osWaitForever )==osOK){
+                sprintf(modbus_buffer, "ERROR Writing too many bits (%d > %d)",
+                        nb, MODBUS_MAX_WRITE_BITS);
+            	Debug_Message(LOG_ERROR, modbus_buffer);
+            	osMutexRelease(ModbusMutex);
+        	}
         }
         errno = EMBMDATA;
         return -1;
@@ -1368,9 +1412,13 @@ int modbus_write_registers(modbus_t *ctx, int addr, int nb, const uint16_t *src)
 
     if (nb > MODBUS_MAX_WRITE_REGISTERS) {
         if (ctx->debug) {
-            fprintf(stderr,
-                    "ERROR Trying to write to too many registers (%d > %d)\n",
-                    nb, MODBUS_MAX_WRITE_REGISTERS);
+        	if(osMutexAcquire(ModbusMutex,osWaitForever )==osOK){
+                sprintf(modbus_buffer,
+                        "ERROR Trying to write to too many registers (%d > %d)",
+                        nb, MODBUS_MAX_WRITE_REGISTERS);
+            	Debug_Message(LOG_ERROR, modbus_buffer);
+            	osMutexRelease(ModbusMutex);
+        	}
         }
         errno = EMBMDATA;
         return -1;
@@ -1460,9 +1508,13 @@ int modbus_write_and_read_registers(modbus_t *ctx,
 
     if (write_nb > MODBUS_MAX_WR_WRITE_REGISTERS) {
         if (ctx->debug) {
-            fprintf(stderr,
-                    "ERROR Too many registers to write (%d > %d)\n",
-                    write_nb, MODBUS_MAX_WR_WRITE_REGISTERS);
+        	if(osMutexAcquire(ModbusMutex,osWaitForever )==osOK){
+                sprintf(modbus_buffer,
+                        "ERROR Too many registers to write (%d > %d)",
+                        write_nb, MODBUS_MAX_WR_WRITE_REGISTERS);
+            	Debug_Message(LOG_ERROR, modbus_buffer);
+            	osMutexRelease(ModbusMutex);
+        	}
         }
         errno = EMBMDATA;
         return -1;
@@ -1470,9 +1522,13 @@ int modbus_write_and_read_registers(modbus_t *ctx,
 
     if (read_nb > MODBUS_MAX_WR_READ_REGISTERS) {
         if (ctx->debug) {
-            fprintf(stderr,
-                    "ERROR Too many registers requested (%d > %d)\n",
-                    read_nb, MODBUS_MAX_WR_READ_REGISTERS);
+        	if(osMutexAcquire(ModbusMutex,osWaitForever )==osOK){
+                sprintf(modbus_buffer,
+                        "ERROR Too many registers requested (%d > %d)",
+                        read_nb, MODBUS_MAX_WR_READ_REGISTERS);
+            	Debug_Message(LOG_ERROR, modbus_buffer);
+            	osMutexRelease(ModbusMutex);
+        	}
         }
         errno = EMBMDATA;
         return -1;
