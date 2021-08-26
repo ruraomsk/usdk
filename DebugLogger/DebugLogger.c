@@ -14,8 +14,10 @@
 #include "parson.h"
 #include "udp.h"
 #include "share.h"
+#include <stdarg.h>
 
 extern osMessageQueueId_t DebugLoggerQueue;
+extern osMutexId_t DebugLoggerMutex;
 extern int ReadyLogger;
 
 char LoggerBuffer[512];
@@ -25,19 +27,25 @@ struct {
 	unsigned int port;
 } debugSetup;
 
-void Debug_Message(int level, char *message) {
-	DebugLoggerMsg *newLog;
-	newLog = malloc(sizeof(DebugLoggerMsg));
-	memset(newLog->Buffer, 0, sizeof(newLog->Buffer));
-	int len = strlen(message);
-	if (len > (sizeof(newLog->Buffer) - 1)) {
-		len = sizeof(newLog->Buffer) - 1;
+void Debug_Message(int level, char *fmt,...) {
+	if (osMutexAcquire(DebugLoggerMutex, osWaitForever) == osOK) {
+		va_list ap;
+		va_start(ap,fmt);
+		DebugLoggerMsg *newLog;
+		vsprintf(LoggerBuffer,fmt,ap);
+		newLog = malloc(sizeof(DebugLoggerMsg));
+		memset(newLog->Buffer, 0, sizeof(newLog->Buffer));
+		int len = strlen(LoggerBuffer);
+		if (len > (sizeof(newLog->Buffer) - 1)) {
+			len = sizeof(newLog->Buffer) - 1;
+		}
+		memcpy(newLog->Buffer, LoggerBuffer, len);
+		newLog->Level = level;
+		newLog->time = GetDeviceTime();
+		osMessageQueuePut(DebugLoggerQueue, newLog, 0, 0);
+		free(newLog);
+		osMutexRelease(DebugLoggerMutex);
 	}
-	memcpy(newLog->Buffer, message, len);
-	newLog->Level = level;
-	newLog->time = GetDeviceTime();
-	osMessageQueuePut(DebugLoggerQueue, newLog, 0, 0);
-	free(newLog);
 }
 char* Debuger_Status(int level) {
 	switch (level) {

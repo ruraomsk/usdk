@@ -32,6 +32,7 @@
 #include "TCPMain.h"
 #include "ServerModbusTCP.h"
 #include "ClientModbusTCP.h"
+#include "ListenDevice.h"
 #include "modbus.h"
 
 /* USER CODE END Includes */
@@ -46,7 +47,7 @@
 #define STEP_MAIN_TCP 			60000
 #define STEP_SHARE 				10000
 #define STEP_SERVER_MODBUS_TCP 	1000
-#define STEP_CLIENT_MODBUS_TCP 	1000
+#define STEP_CLIENT_MODBUS_TCP 	10000
 
 /* USER CODE END PD */
 
@@ -119,7 +120,7 @@ int ReadyETH=0;			//Готовность Ehernet
 int ReadyLogger=0;		//Готовность Logger
 int ReadyShare=0;	//Готовность Share
 osMessageQueueId_t DebugLoggerQueue;
-
+osMutexId_t DebugLoggerMutex;
 
 /* USER CODE END 0 */
 
@@ -169,6 +170,7 @@ int main(void)
 
   /* USER CODE BEGIN RTOS_MUTEX */
 	/* add mutexes, ... */
+  DebugLoggerMutex=osMutexNew(NULL);
   /* USER CODE END RTOS_MUTEX */
 
   /* USER CODE BEGIN RTOS_SEMAPHORES */
@@ -424,6 +426,7 @@ void StartDefaultTask(void *argument)
   /* init code for LWIP */
   MX_LWIP_Init();
   /* USER CODE BEGIN 5 */
+
   ReadyETH=1;
   ShareInit();
   Debug_Message(LOG_INFO, "Запущена основная задача");
@@ -490,7 +493,6 @@ void StartServerModbusTCP(void *argument)
 	while (!ReadyShare) {
 		osDelay(100);
 	}
-	init_modbus_system();
 	while(1){
 		Debug_Message(LOG_INFO, "Запускаем сервер Modbus");
 		ServerModbusTCPLoop();
@@ -513,7 +515,6 @@ void StartClientModbusTCP(void *argument)
 	while (!ReadyShare) {
 		osDelay(100);
 	}
-	init_modbus_system();
 	while(1){
 		Debug_Message(LOG_INFO, "Запускаем клиента Modbus");
 		ClientModbusTCPLoop();

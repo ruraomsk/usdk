@@ -129,6 +129,7 @@
 "./Middlewares/Third_Party/LwIP/system/OS/sys_arch.o"
 "./MobusTCP/ClientModbusTCP.o"
 "./MobusTCP/ServerModbusTCP.o"
+"./TCPMain/ListenDevice.o"
 "./TCPMain/TCPMain.o"
 "./libmodbus/modbus-data.o"
 "./libmodbus/modbus-tcp.o"

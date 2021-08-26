@@ -40,8 +40,7 @@ void TCPMainLoop(void) {
 	srv_addr.sin_port = htons(TCPMainSetup.port);
 	int sock = socket(AF_INET, SOCK_STREAM, 0);
 	if (sock < 0) {
-		sprintf(TCPMainBuffer,"Не могу создать сокет %d",errno);
-		Debug_Message(LOG_ERROR, TCPMainBuffer);
+		Debug_Message(LOG_ERROR, "Не могу создать сокет %d",errno);
 		return;
 	}
 	//Устанавливаем тайм ауты
@@ -56,7 +55,7 @@ void TCPMainLoop(void) {
 	err = connect(sock, (struct sockaddr*) &srv_addr,
 			sizeof(struct sockaddr_in));
 	if (err != 0) {
-		Debug_Message(LOG_ERROR, "Нет соединения с сервером");
+		Debug_Message(LOG_ERROR, "Нет соединения с сервером %s:%d errno %d socket:%d",TCPMainBuffer,TCPMainSetup.port,errno,sock);
 		shutdown(sock, 0);
 		close(sock);
 		return;
@@ -89,7 +88,7 @@ void TCPMainLoop(void) {
 		strcat(TCPMainBuffer,"\n\r");
 		int err = send(sock, TCPMainBuffer, strlen(TCPMainBuffer), 0);
 		if (err < 0) {
-			Debug_Message(LOG_ERROR, "Не смог передать строку");
+			Debug_Message(LOG_ERROR, "Не смог передать строку %s",TCPMainBuffer);
 			shutdown(sock, 0);
 			close(sock);
 			return;

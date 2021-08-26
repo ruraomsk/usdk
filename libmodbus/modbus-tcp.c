@@ -13,15 +13,15 @@
 #include <signal.h>
 #include <sys/types.h>
 
-# include <sys/socket.h>
+# include <sockets.h>
 //# include <sys/ioctl.h>
 
 
 //# include <netinet/in.h>
 //# include <netinet/ip.h>
 //# include <netinet/tcp.h>
-# include <arpa/inet.h>
-# include <netdb.h>
+//# include <arpa/inet.h>
+//# include <netdb.h>
 
 
 #include "modbus.h"
@@ -29,8 +29,6 @@
 
 #include "modbus-tcp.h"
 #include "modbus-tcp-private.h"
-char modbus_buffer[128];
-osMutexId_t ModbusMutex;
 
 
 static int _modbus_set_slave(modbus_t *ctx, int slave)
@@ -150,12 +148,8 @@ static int _modbus_tcp_pre_check_confirmation(modbus_t *ctx, const uint8_t *req,
     /* Check transaction ID */
     if (req[0] != rsp[0] || req[1] != rsp[1]) {
         if (ctx->debug) {
-        	if (osMutexAcquire(ModbusMutex, osWaitForever) == osOK) {
-                    sprintf(modbus_buffer, "Invalid transaction ID received 0x%X (not 0x%X)",
+			Debug_Message(LOG_ERROR, "Invalid transaction ID received 0x%X (not 0x%X)",
                             (rsp[0] << 8) + rsp[1], (req[0] << 8) + req[1]);
-        	        Debug_Message(LOG_ERROR, modbus_buffer);
-        		osMutexRelease(ModbusMutex);
-        	}
         }
         errno = EMBBADDATA;
         return -1;
@@ -164,12 +158,8 @@ static int _modbus_tcp_pre_check_confirmation(modbus_t *ctx, const uint8_t *req,
     /* Check protocol ID */
     if (rsp[2] != 0x0 && rsp[3] != 0x0) {
         if (ctx->debug) {
-        	if (osMutexAcquire(ModbusMutex, osWaitForever) == osOK) {
-                    sprintf(modbus_buffer, "Invalid protocol ID received 0x%X (not 0x0)",
+        	        Debug_Message(LOG_ERROR, "Invalid protocol ID received 0x%X (not 0x0)",
                             (rsp[2] << 8) + rsp[3]);
-        	        Debug_Message(LOG_ERROR, modbus_buffer);
-        		osMutexRelease(ModbusMutex);
-        	}
         }
         errno = EMBBADDATA;
         return -1;
@@ -252,41 +242,35 @@ static int _modbus_tcp_connect(modbus_t *ctx)
     /* Specialized version of sockaddr for Internet socket address (same size) */
     struct sockaddr_in addr;
     modbus_tcp_t *ctx_tcp = ctx->backend_data;
-    int flags = SOCK_STREAM;
-
-
-
-    ctx->s = socket(PF_INET, flags, 0);
-    if (ctx->s == -1) {
-        return -1;
-    }
-
-    rc = _modbus_tcp_set_ipv4_options(ctx->s);
-    if (rc == -1) {
-        close(ctx->s);
-        ctx->s = -1;
-        return -1;
-    }
-
-    if (ctx->debug) {
-    	if (osMutexAcquire(ModbusMutex, osWaitForever) == osOK) {
-            sprintf(modbus_buffer,"Connecting to %s:%d", ctx_tcp->ip, ctx_tcp->port);
-    	        Debug_Message(LOG_ERROR, modbus_buffer);
-    		osMutexRelease(ModbusMutex);
-    	}
-
-    }
-
     addr.sin_family = AF_INET;
     addr.sin_port = htons(ctx_tcp->port);
-    addr.sin_addr.s_addr = inet_addr(ctx_tcp->ip);
-    rc = _connect(ctx->s, (struct sockaddr *)&addr, sizeof(addr), &ctx->response_timeout);
+//    addr.sin_addr.s_addr = inet_addr(ctx_tcp->ip);
+//    inet_aton("192.168.115.159",&addr.sin_addr.s_addr);
+    inet_aton(ctx_tcp->ip,&addr.sin_addr.s_addr);
+    int sock = socket(AF_INET, SOCK_STREAM, 0);
+    if (sock == -1) {
+        if (ctx->debug) {
+        	        Debug_Message(LOG_ERROR, "not sockets");
+        }
+        return -1;
+    }
+    lwip_setsockopt(sock, SOL_SOCKET,SO_RCVTIMEO, &ctx->response_timeout, sizeof(struct timeval));
+    lwip_setsockopt(sock, SOL_SOCKET,SO_SNDTIMEO, &ctx->response_timeout, sizeof(struct timeval));
+//    lwip_setsockopt(sock, SOL_SOCKET,SO_CONTIMEO, &ctx->response_timeout, sizeof(struct timeval));
+    ctx->s=sock;
+    if (ctx->debug) {
+    	        Debug_Message(LOG_INFO, "Connecting to %s:%d socket:%d", ctx_tcp->ip, ctx_tcp->port,ctx->s);
+    }
+    rc = connect(sock, (struct sockaddr *)&addr, sizeof(struct sockaddr_in));
     if (rc == -1) {
+    	if(ctx->debug){
+        	Debug_Message(LOG_ERROR, "Нет соединения с сервером %s:%d sock:%d errno:%d",ctx_tcp->ip, ctx_tcp->port,ctx->s,errno,sock);
+    	}
+    	shutdown(ctx->s,0);
         close(ctx->s);
         ctx->s = -1;
         return -1;
     }
-
     return 0;
 }
 
@@ -338,7 +322,7 @@ int modbus_tcp_listen(modbus_t *ctx, int nb_connection)
     flags = SOCK_STREAM;
 
 
-    new_s = socket(PF_INET, flags, IPPROTO_TCP);
+    new_s = socket(AF_INET, flags, 0);
     if (new_s == -1) {
         return -1;
     }
@@ -357,6 +341,7 @@ int modbus_tcp_listen(modbus_t *ctx, int nb_connection)
     if (ctx_tcp->ip[0] == '0') {
         /* Listen any addresses */
         addr.sin_addr.s_addr = htonl(INADDR_ANY);
+//    	        addr.sin_addr.s_addr = INADDR_ANY;
     } else {
         /* Listen only specified IP address */
         addr.sin_addr.s_addr = inet_addr(ctx_tcp->ip);
@@ -393,12 +378,8 @@ int modbus_tcp_accept(modbus_t *ctx, int *s)
     }
 
     if (ctx->debug) {
-    	if (osMutexAcquire(ModbusMutex, osWaitForever) == osOK) {
-    	        sprintf(modbus_buffer,"The client connection from %s is accepted",
-    	               inet_ntoa(addr.sin_addr));
-    	        Debug_Message(LOG_INFO, modbus_buffer);
-    		osMutexRelease(ModbusMutex);
-    	}
+    	        Debug_Message(LOG_INFO, "The client connection from %s is accepted",
+     	               inet_ntoa(addr.sin_addr));
 
     }
 
@@ -412,11 +393,7 @@ static int _modbus_tcp_select(modbus_t *ctx, fd_set *rset, struct timeval *tv, i
     while ((s_rc = select(ctx->s+1, rset, NULL, NULL, tv)) == -1) {
         if (errno == EINTR) {
             if (ctx->debug) {
-            	if (osMutexAcquire(ModbusMutex, osWaitForever) == osOK) {
-                    sprintf(modbus_buffer, "A non blocked signal was caught");
-            	        Debug_Message(LOG_INFO, modbus_buffer);
-            		osMutexRelease(ModbusMutex);
-            	}
+            	        Debug_Message(LOG_INFO, "A non blocked signal was caught");
             }
             /* Necessary after an error */
             FD_ZERO(rset);

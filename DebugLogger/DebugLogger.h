@@ -16,7 +16,7 @@ typedef struct {
 	dev_time time;
 	char Buffer[128];
 } DebugLoggerMsg;
-void Debug_Message(int level,char *message);
+void Debug_Message(int level,char *fmt,...);
 char *Debuger_Status(int level);
 
 void DebugLoggerLoop(void);
