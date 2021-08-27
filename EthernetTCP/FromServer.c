@@ -5,8 +5,9 @@
  *      Author: rura
  */
 
+#include "../EthernetTCP/TCPMain.h"
+
 #include "lwip.h"
-#include "TCPMain.h"
 #include "DebugLogger.h"
 #include "parson.h"
 #include "sockets.h"
@@ -23,12 +24,7 @@ char TCPMainBuffer[MAX_LEN_TCP_MESSAGE];
 char *ptrMainBuffer = TCPMainBuffer;
 
 int ReadyMainConnect = 0;
-void tcpMainFirstString(){
-	sprintf(TCPMainBuffer,"{\"deviceinfo\":{\"id\":%d,\"onboard\":{\"GPRS\":true,\"GSM\":true,\"ETH\":true,\"USB\":true},\"soft\":{\"version\":\"versionsoftware\"}},\"kye\":\"open key string\"}",8888);
-}
-void tcpMainNextString(){
-	sprintf(TCPMainBuffer,"Ready");
-}
+
 void TCPMainLoop(void) {
 	TCPMainReadSetup();
 	int err;
@@ -60,6 +56,7 @@ void TCPMainLoop(void) {
 		close(sock);
 		return;
 	}
+
 	tcpMainFirstString();
 	strcat(TCPMainBuffer,"\n\r");
 	err = send(sock, TCPMainBuffer, strlen(TCPMainBuffer), 0);
@@ -103,30 +100,5 @@ void TCPMainLoop(void) {
 		close(sock);
 	}
 
-}
-
-void TCPMainReadSetup(void) {
-	JSON_Value *root = ShareGetJson("tcpmain");
-	JSON_Object *object = json_value_get_object(root);
-	TCPMainSetup.port = (int) json_object_get_number(object, "port");
-	TCPMainSetup.timeoutRead = (int) json_object_get_number(object, "timeoutread");
-	TCPMainSetup.timeoutWrite = (int) json_object_get_number(object, "timeoutwrite");
-	TCPMainSetup.timeoutConn = (int) json_object_get_number(object, "timeoutconn");
-	sscanf(json_object_get_string(object, "ip"), "%d.%d.%d.%d",
-			&TCPMainSetup.adr1, &TCPMainSetup.adr2, &TCPMainSetup.adr3,
-			&TCPMainSetup.adr4);
-}
-
-void TCPMainWriteSetup(void) {
-	JSON_Value *root_value = json_value_init_object();
-	JSON_Object *root_object = json_value_get_object(root_value);
-	sprintf(TCPMainBuffer, "%d.%d.%d.%d", TCPMainSetup.adr1, TCPMainSetup.adr2,
-			TCPMainSetup.adr3, TCPMainSetup.adr4);
-	json_object_set_string(root_object, "ip", TCPMainBuffer);
-	json_object_set_number(root_object, "port", TCPMainSetup.port);
-	json_object_set_number(root_object, "timeoutread", TCPMainSetup.timeoutRead);
-	json_object_set_number(root_object, "timeoutwrite", TCPMainSetup.timeoutWrite);
-	json_object_set_number(root_object, "timeoutconn", TCPMainSetup.timeoutConn);
-	ShareSetJson("tcpmain", root_value);
 }
 

@@ -42,59 +42,6 @@ void ServerModbusTCPLoop() {
 		}
 		close(client_socket);
 	}
-//
-//	FD_ZERO(&refset);
-//	FD_SET(listen_socket, &refset);
-//	fdmax = listen_socket;
-//	for (;;) {
-//		struct timeval timeout = { 0, 1 };
-//		int result = select(fdmax + 1, &refset, NULL, NULL, &timeout);
-//		if (result == 0) {
-//			osDelay(100);
-//			continue;
-//		}
-//		for (int master_socket = 0; master_socket <= fdmax; master_socket++) {
-//			if (!FD_ISSET(master_socket, &refset))
-//				continue;
-//			if (master_socket == listen_socket) {
-//				//new connect
-//				Debug_Message(LOG_DEBUG, "New connection for modbus server ");
-//				socklen_t addrlen;
-//				struct sockaddr_in clientaddr;
-//				int newfd;
-//				addrlen = sizeof(clientaddr);
-//				memset(&clientaddr, 0, sizeof(clientaddr));
-//				newfd = accept(listen_socket, (struct sockaddr* ) &clientaddr,
-//						&addrlen);
-//				if (newfd == -1) {
-//					Debug_Message(LOG_ERROR, "Server accept() error");
-//				} else {
-//					FD_SET(newfd, &refset);
-//
-//					if (newfd > fdmax) {
-//						/* Keep track of the maximum */
-//						fdmax = newfd;
-//					}
-//					Debug_Message(LOG_DEBUG, "New connection from %s:%d on socket %d\n",
-//							inet_ntoa(clientaddr.sin_addr),
-//							(int) clientaddr.sin_port, newfd);
-//				}
-//
-//			} else {
-//				modbus_set_socket(ctx, master_socket);
-//				int rc = modbus_receive(ctx, query);
-//				if (rc > 0) {
-//					modbus_reply(ctx, query, rc, mb_mapping);
-//				} else if (rc == -1) {
-//					Debug_Message(LOG_DEBUG, "Connection closed");
-//					close(master_socket);
-//					FD_CLR(master_socket, &refset);
-//					if (master_socket == fdmax)
-//						fdmax--;
-//				}
-//			}
-//		}
-//	}
 	close(listen_socket);
 	modbus_mapping_free(mb_mapping);
 	free(query);

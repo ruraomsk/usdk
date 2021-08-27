@@ -29,10 +29,8 @@
 #include "share.h"
 #include "parson.h"
 #include "DeviceTime.h"
-#include "TCPMain.h"
 #include "ServerModbusTCP.h"
 #include "ClientModbusTCP.h"
-#include "ListenDevice.h"
 #include "modbus.h"
 
 /* USER CODE END Includes */
@@ -116,11 +114,8 @@ void StartClientModbusTCP(void *argument);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-int ReadyETH=0;			//Готовность Ehernet
-int ReadyLogger=0;		//Готовность Logger
-int ReadyShare=0;	//Готовность Share
-osMessageQueueId_t DebugLoggerQueue;
-osMutexId_t DebugLoggerMutex;
+char ReadyETH=false;			//Готовность Ehernet
+char ReadyShare=false;	//Готовность Share
 
 /* USER CODE END 0 */
 
@@ -162,7 +157,7 @@ int main(void)
   MX_GPIO_Init();
   MX_UART4_Init();
   /* USER CODE BEGIN 2 */
-
+  Debug_Init();
   /* USER CODE END 2 */
 
   /* Init scheduler */
@@ -170,7 +165,6 @@ int main(void)
 
   /* USER CODE BEGIN RTOS_MUTEX */
 	/* add mutexes, ... */
-  DebugLoggerMutex=osMutexNew(NULL);
   /* USER CODE END RTOS_MUTEX */
 
   /* USER CODE BEGIN RTOS_SEMAPHORES */
@@ -185,7 +179,6 @@ int main(void)
   /* USER CODE BEGIN RTOS_QUEUES */
 	/* add queues, ... */
 
-  DebugLoggerQueue = osMessageQueueNew(16, sizeof(DebugLoggerMsg), NULL);
 
   /* USER CODE END RTOS_QUEUES */
 
@@ -427,7 +420,6 @@ void StartDefaultTask(void *argument)
   MX_LWIP_Init();
   /* USER CODE BEGIN 5 */
 
-  ReadyETH=1;
   ShareInit();
   Debug_Message(LOG_INFO, "Запущена основная задача");
 

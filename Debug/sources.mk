@@ -23,10 +23,12 @@ SUBDIRS := \
 Core/Src \
 Core/Startup \
 DebugLogger \
+Device \
 DeviceLogger \
 DeviceTime \
 Drivers/BSP/Components/lan8742 \
 Drivers/STM32H7xx_HAL_Driver/Src \
+EthernetTCP \
 LWIP/App \
 LWIP/Target \
 Middlewares/Third_Party/FreeRTOS/Source/CMSIS_RTOS_V2 \
@@ -42,7 +44,6 @@ Middlewares/Third_Party/LwIP/src/netif \
 Middlewares/Third_Party/LwIP/src/netif/ppp \
 Middlewares/Third_Party/LwIP/system/OS \
 MobusTCP \
-TCPMain \
 libmodbus \
 parson \
 share \

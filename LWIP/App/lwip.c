@@ -36,7 +36,7 @@ static void ethernet_link_status_updated(struct netif *netif);
 void Error_Handler(void);
 
 /* USER CODE BEGIN 1 */
-
+extern char ReadyETH;
 /* USER CODE END 1 */
 
 /* Variables Initialization */
@@ -116,6 +116,16 @@ void MX_LWIP_Init(void)
 /* USER CODE END H7_OS_THREAD_NEW_CMSIS_RTOS_V2 */
 
 /* USER CODE BEGIN 3 */
+  if (netif_is_link_up(&gnetif))
+  {
+    /* When the netif is fully configured this function must be called */
+    ReadyETH=true;
+  }
+  else
+  {
+    /* When the netif link is down this function must be called */
+	  ReadyETH=false;
+  }
 
 /* USER CODE END 3 */
 }

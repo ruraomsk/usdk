@@ -13,11 +13,11 @@
 #include <stdio.h>
 
 #include "DebugLogger.h"
-static char *charts[] = { "debug", "tcpmain", "tcpsecond", "transport" };
+static char *charts[] = { "debug", "tcpconnect", "setupdevice", "transport" };
 
-static char *values[] = { "{\"ip\":\"192.168.115.159\",\"port\":7777}",
-		"{\"ip\":\"192.168.115.159\",\"port\":1093,\"timeoutread\":10,\"timeoutwrite\":1,\"timeoutconn\":5}",
-		"{\"ip\":\"192.168.115.159\",\"port\":1094,\"timeoutread\":1,\"timeoutwrite\":1,\"timeoutconn\":5}",
+static char *values[] = { "{\"ip\":\"192.168.115.159\",\"port\":2095}",
+		"{\"ip\":\"192.168.115.159\",\"port\":2093,\"timeoutread\":10,\"timeoutwrite\":1,\"timeoutconn\":5}",
+		"{\"id\":\true,\"eth\":\true,\"gprs\":true,\"gps\":true,\"usb\":true,\"modbusslave\":true,\"modbusmaster\":true}",
 		"{}" };
 static osMutexId_t ShareMutex;
 
@@ -102,7 +102,7 @@ void ShareInit() {
 }
 
 
-JSON_Value* ShareGetJson(char *chart) {
+JSON_Value* ShareGetJson(const char *chart) {
 	JSON_Value *result = NULL;
 	if (osMutexAcquire(ShareMutex, osWaitForever) == osOK) {
 		ENTRY e, *ep;
@@ -116,7 +116,7 @@ JSON_Value* ShareGetJson(char *chart) {
 	}
 	return result;
 }
-void ShareSetJson(char *chart, JSON_Value *rvalue) {
+void ShareSetJson(const char *chart, JSON_Value *rvalue) {
 	if (osMutexAcquire(ShareMutex, osWaitForever) == osOK) {
 		ENTRY e, *ep;
 		ShareValue *value;

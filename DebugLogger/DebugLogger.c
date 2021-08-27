@@ -16,23 +16,26 @@
 #include "share.h"
 #include <stdarg.h>
 
-extern osMessageQueueId_t DebugLoggerQueue;
-extern osMutexId_t DebugLoggerMutex;
-extern int ReadyLogger;
+static osMessageQueueId_t DebugLoggerQueue;
+static osMutexId_t DebugLoggerMutex;
 
-char LoggerBuffer[512];
+char* LoggerBuffer;
 struct {
 	ip_addr_t ipAddr;
 	int adr1, adr2, adr3, adr4;
 	unsigned int port;
 } debugSetup;
-
-void Debug_Message(int level, char *fmt,...) {
+void Debug_Init() {
+	DebugLoggerQueue = osMessageQueueNew(16, sizeof(DebugLoggerMsg), NULL);
+	DebugLoggerMutex = osMutexNew(NULL);
+	LoggerBuffer=malloc(1024);
+}
+void Debug_Message(int level, char *fmt, ...) {
 	if (osMutexAcquire(DebugLoggerMutex, osWaitForever) == osOK) {
 		va_list ap;
-		va_start(ap,fmt);
+		va_start(ap, fmt);
 		DebugLoggerMsg *newLog;
-		vsprintf(LoggerBuffer,fmt,ap);
+		vsprintf(LoggerBuffer, fmt, ap);
 		newLog = malloc(sizeof(DebugLoggerMsg));
 		memset(newLog->Buffer, 0, sizeof(newLog->Buffer));
 		int len = strlen(LoggerBuffer);
@@ -67,23 +70,26 @@ void DebugLoggerLoop() {
 	DebugWriteSetup();
 	udp = udp_new();
 	udp_connect(udp, &debugSetup.ipAddr, debugSetup.port);
-	ReadyLogger = 1;
 	Debug_Message(LOG_INFO, "Logger запущен");
 	/* Infinite loop */
 	for (;;) {
 		DebugLoggerMsg msg;
 		if (osMessageQueueGet(DebugLoggerQueue, &msg, NULL, 0) == osOK) {
-			sprintf(LoggerBuffer, "%s:%6s:%s\n\r", TimeToString(msg.time),
-					Debuger_Status(msg.Level), msg.Buffer);
-			struct pbuf *udp_buffer = pbuf_alloc(PBUF_TRANSPORT,
-					strlen(LoggerBuffer), PBUF_RAM);
-			if (udp_buffer != NULL) {
-				memcpy(udp_buffer->payload, LoggerBuffer, strlen(LoggerBuffer));
-				udp_send(udp, udp_buffer);
-				pbuf_free(udp_buffer);
+			if (ReadyETH) {
+				sprintf(LoggerBuffer, "%s:%6s:%s\n\r", TimeToString(msg.time),
+						Debuger_Status(msg.Level), msg.Buffer);
+				struct pbuf *udp_buffer = pbuf_alloc(PBUF_TRANSPORT,
+						strlen(LoggerBuffer), PBUF_RAM);
+				if (udp_buffer != NULL) {
+					memcpy(udp_buffer->payload, LoggerBuffer,
+							strlen(LoggerBuffer));
+					udp_send(udp, udp_buffer);
+					pbuf_free(udp_buffer);
+				}
 			}
+			osDelay(100);
+
 		}
-		osDelay(100);
 	}
 }
 void DebugReadSetup(void) {
