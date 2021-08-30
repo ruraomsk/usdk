@@ -13,11 +13,12 @@
 #include <stdio.h>
 
 #include "DebugLogger.h"
-static char *charts[] = { "debug", "tcpconnect", "setupdevice", "transport" };
+static char *charts[] = { "debug", "tcpconnectmain","tcpconnectsecond", "setup", "transport" };
 
 static char *values[] = { "{\"ip\":\"192.168.115.159\",\"port\":2095}",
-		"{\"ip\":\"192.168.115.159\",\"port\":2093,\"timeoutread\":10,\"timeoutwrite\":1,\"timeoutconn\":5}",
-		"{\"id\":\true,\"eth\":\true,\"gprs\":true,\"gps\":true,\"usb\":true,\"modbusslave\":true,\"modbusmaster\":true}",
+		"{\"ip\":\"192.168.115.159\",\"port\":2093,\"timeoutread\":10,\"timeoutwrite\":1,\"timeoutque\":240000}",
+		"{\"ip\":\"192.168.115.159\",\"port\":2094,\"timeoutread\":10,\"timeoutwrite\":1,\"timeoutque\":240000}",
+		"{\"id\":\128,\"eth\":\true,\"gprs\":true,\"gps\":true,\"usb\":true,\"modbusslave\":true,\"modbusmaster\":true}",
 		"{}" };
 static osMutexId_t ShareMutex;
 

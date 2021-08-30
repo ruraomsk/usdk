@@ -31,6 +31,7 @@
 #include "DeviceTime.h"
 #include "ServerModbusTCP.h"
 #include "ClientModbusTCP.h"
+#include "Transport.h"
 #include "modbus.h"
 
 /* USER CODE END Includes */
@@ -42,7 +43,10 @@
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
-#define STEP_MAIN_TCP 			60000
+
+#define STEP_TCP 				60000
+#define STEP_GPRS 				60000
+
 #define STEP_SHARE 				10000
 #define STEP_SERVER_MODBUS_TCP 	1000
 #define STEP_CLIENT_MODBUS_TCP 	10000
@@ -72,10 +76,10 @@ const osThreadAttr_t DebugLogger_attributes = {
   .stack_size = 1024 * 4,
   .priority = (osPriority_t) osPriorityRealtime,
 };
-/* Definitions for TCPMain */
-osThreadId_t TCPMainHandle;
-const osThreadAttr_t TCPMain_attributes = {
-  .name = "TCPMain",
+/* Definitions for ToServerTCP */
+osThreadId_t ToServerTCPHandle;
+const osThreadAttr_t ToServerTCP_attributes = {
+  .name = "ToServerTCP",
   .stack_size = 1024 * 4,
   .priority = (osPriority_t) osPriorityRealtime,
 };
@@ -93,6 +97,34 @@ const osThreadAttr_t ClientModbusTCP_attributes = {
   .stack_size = 256 * 4,
   .priority = (osPriority_t) osPriorityLow,
 };
+/* Definitions for FromServerTCP */
+osThreadId_t FromServerTCPHandle;
+const osThreadAttr_t FromServerTCP_attributes = {
+  .name = "FromServerTCP",
+  .stack_size = 1024 * 4,
+  .priority = (osPriority_t) osPriorityLow,
+};
+/* Definitions for ToServerGPRS */
+osThreadId_t ToServerGPRSHandle;
+const osThreadAttr_t ToServerGPRS_attributes = {
+  .name = "ToServerGPRS",
+  .stack_size = 1024 * 4,
+  .priority = (osPriority_t) osPriorityLow,
+};
+/* Definitions for FromServerGPRS */
+osThreadId_t FromServerGPRSHandle;
+const osThreadAttr_t FromServerGPRS_attributes = {
+  .name = "FromServerGPRS",
+  .stack_size = 1024 * 4,
+  .priority = (osPriority_t) osPriorityLow,
+};
+/* Definitions for TCPTransport */
+osThreadId_t TCPTransportHandle;
+const osThreadAttr_t TCPTransport_attributes = {
+  .name = "TCPTransport",
+  .stack_size = 256 * 4,
+  .priority = (osPriority_t) osPriorityLow,
+};
 /* USER CODE BEGIN PV */
 
 /* USER CODE END PV */
@@ -104,9 +136,13 @@ static void MX_GPIO_Init(void);
 static void MX_UART4_Init(void);
 void StartDefaultTask(void *argument);
 void StartDebugLogger(void *argument);
-void StartTCPMain(void *argument);
+void StartToServerTCP(void *argument);
 void StartServerModbusTCP(void *argument);
 void StartClientModbusTCP(void *argument);
+void StartFromServerTCP(void *argument);
+void StartToServerGPRS(void *argument);
+void StartFromServerGPRS(void *argument);
+void StartTCPTransport(void *argument);
 
 /* USER CODE BEGIN PFP */
 
@@ -115,7 +151,29 @@ void StartClientModbusTCP(void *argument);
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
 char ReadyETH=false;			//Готовность Ehernet
-char ReadyShare=false;	//Готовность Share
+char ReadyShare=false;			//Готовность Share
+int TransportNeed=0;		//Готовность работы транспортного протокола
+int GPRSNeed=0;			//Готовность работы GPRS если есть
+
+//Очереди для Ethernet
+osMessageQueueId_t ToServerQueue;
+osMessageQueueId_t FromServerQueue;
+osMessageQueueId_t ToServerSecQueue;
+osMessageQueueId_t FromServerSecQueue;
+
+//Очереди для GPRS
+osMessageQueueId_t GPRSToServerQueue;
+osMessageQueueId_t GPRSFromServerQueue;
+osMessageQueueId_t GPRSToServerSecQueue;
+osMessageQueueId_t GPRSFromServerSecQueue;
+
+//Очереди от основной программы управления
+osMessageQueueId_t MainChangeStatus;
+osMessageQueueId_t MainToServerQueue;
+osMessageQueueId_t MainFromServerQueue;
+osMessageQueueId_t MainToServerSecQueue;
+osMessageQueueId_t MainFromServerSecQueue;
+
 
 /* USER CODE END 0 */
 
@@ -189,14 +247,26 @@ int main(void)
   /* creation of DebugLogger */
   DebugLoggerHandle = osThreadNew(StartDebugLogger, NULL, &DebugLogger_attributes);
 
-  /* creation of TCPMain */
-  TCPMainHandle = osThreadNew(StartTCPMain, NULL, &TCPMain_attributes);
+  /* creation of ToServerTCP */
+  ToServerTCPHandle = osThreadNew(StartToServerTCP, NULL, &ToServerTCP_attributes);
 
   /* creation of ServerModbusTCP */
   ServerModbusTCPHandle = osThreadNew(StartServerModbusTCP, NULL, &ServerModbusTCP_attributes);
 
   /* creation of ClientModbusTCP */
   ClientModbusTCPHandle = osThreadNew(StartClientModbusTCP, NULL, &ClientModbusTCP_attributes);
+
+  /* creation of FromServerTCP */
+  FromServerTCPHandle = osThreadNew(StartFromServerTCP, NULL, &FromServerTCP_attributes);
+
+  /* creation of ToServerGPRS */
+  ToServerGPRSHandle = osThreadNew(StartToServerGPRS, NULL, &ToServerGPRS_attributes);
+
+  /* creation of FromServerGPRS */
+  FromServerGPRSHandle = osThreadNew(StartFromServerGPRS, NULL, &FromServerGPRS_attributes);
+
+  /* creation of TCPTransport */
+  TCPTransportHandle = osThreadNew(StartTCPTransport, NULL, &TCPTransport_attributes);
 
   /* USER CODE BEGIN RTOS_THREADS */
 	/* add threads, ... */
@@ -449,26 +519,27 @@ void StartDebugLogger(void *argument)
   /* USER CODE END StartDebugLogger */
 }
 
-/* USER CODE BEGIN Header_StartTCPMain */
+/* USER CODE BEGIN Header_StartToServerTCP */
 /**
-* @brief Function implementing the TCPMain thread.
+* @brief Function implementing the ToServerTCP thread.
 * @param argument: Not used
 * @retval None
 */
-/* USER CODE END Header_StartTCPMain */
-void StartTCPMain(void *argument)
+/* USER CODE END Header_StartToServerTCP */
+void StartToServerTCP(void *argument)
 {
-  /* USER CODE BEGIN StartTCPMain */
+  /* USER CODE BEGIN StartToServerTCP */
   /* Infinite loop */
-	while (!ReadyShare) {
+	while(TransportNeed==0){
 		osDelay(100);
 	}
 	while(1){
-		Debug_Message(LOG_INFO, "Начинаем соединение с сервером");
-		TCPMainLoop();
-		osDelay(STEP_MAIN_TCP);
+		Debug_Message(LOG_INFO, "Запускаем ToServerTCP");
+		ToServerTCPLoop();
+		osDelay(STEP_TCP);
+
 	}
-  /* USER CODE END StartTCPMain */
+  /* USER CODE END StartToServerTCP */
 }
 
 /* USER CODE BEGIN Header_StartServerModbusTCP */
@@ -513,6 +584,103 @@ void StartClientModbusTCP(void *argument)
 		osDelay(STEP_CLIENT_MODBUS_TCP);
 	}
   /* USER CODE END StartClientModbusTCP */
+}
+
+/* USER CODE BEGIN Header_StartFromServerTCP */
+/**
+* @brief Function implementing the FromServerTCP thread.
+* @param argument: Not used
+* @retval None
+*/
+/* USER CODE END Header_StartFromServerTCP */
+void StartFromServerTCP(void *argument)
+{
+  /* USER CODE BEGIN StartFromServerTCP */
+  /* Infinite loop */
+	while(TransportNeed==0){
+		osDelay(100);
+	}
+	while(1){
+		Debug_Message(LOG_INFO, "Запускаем FromServerTCP");
+		FromServerTCPLoop();
+		osDelay(STEP_TCP);
+
+	}
+  /* USER CODE END StartFromServerTCP */
+}
+
+/* USER CODE BEGIN Header_StartToServerGPRS */
+/**
+* @brief Function implementing the ToServerGPRS thread.
+* @param argument: Not used
+* @retval None
+*/
+/* USER CODE END Header_StartToServerGPRS */
+void StartToServerGPRS(void *argument)
+{
+  /* USER CODE BEGIN StartToServerGPRS */
+  /* Infinite loop */
+	while(TransportNeed==0){
+		osDelay(100);
+	}
+	while(1){
+		while(GPRSNeed==0){
+			osDelay(1000);
+		}
+		Debug_Message(LOG_INFO, "Запускаем ToServerGPRS");
+		ToServerGPRSLoop();
+		osDelay(STEP_GPRS);
+
+	}
+  /* USER CODE END StartToServerGPRS */
+}
+
+/* USER CODE BEGIN Header_StartFromServerGPRS */
+/**
+* @brief Function implementing the FromServerGPRS thread.
+* @param argument: Not used
+* @retval None
+*/
+/* USER CODE END Header_StartFromServerGPRS */
+void StartFromServerGPRS(void *argument)
+{
+  /* USER CODE BEGIN StartFromServerGPRS */
+  /* Infinite loop */
+	while(TransportNeed==0){
+		osDelay(100);
+	}
+	while(1){
+		while(GPRSNeed==0){
+			osDelay(1000);
+		}
+		Debug_Message(LOG_INFO, "Запускаем FromServerGPRS");
+		FromServerGPRSLoop();
+		osDelay(STEP_GPRS);
+
+	}
+  /* USER CODE END StartFromServerGPRS */
+}
+
+/* USER CODE BEGIN Header_StartTCPTransport */
+/**
+* @brief Function implementing the TCPTransport thread.
+* @param argument: Not used
+* @retval None
+*/
+/* USER CODE END Header_StartTCPTransport */
+void StartTCPTransport(void *argument)
+{
+  /* USER CODE BEGIN StartTCPTransport */
+  /* Infinite loop */
+	while (!ReadyShare) {
+		osDelay(100);
+	}
+	while(1){
+		Debug_Message(LOG_INFO, "Запускаем Transport");
+		mainTransportLoop();
+		Debug_Message(LOG_ERROR, "Вышли из Transport");
+	}
+  /* USER CODE END StartTCPTransport */
 }
 
 /* MPU Configuration */

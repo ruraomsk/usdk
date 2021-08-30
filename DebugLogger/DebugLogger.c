@@ -18,7 +18,7 @@
 
 static osMessageQueueId_t DebugLoggerQueue;
 static osMutexId_t DebugLoggerMutex;
-
+extern char ReadyETH;
 char* LoggerBuffer;
 struct {
 	ip_addr_t ipAddr;

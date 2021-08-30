@@ -5,7 +5,8 @@
  *      Author: rura
  */
 
-#include "Device.h"
+#include "Transport.h"
+#include "parson.h"
 
 DeviceStatus readSetup(const char *name) {
 	DeviceStatus d;
@@ -23,7 +24,7 @@ void writeSetup(const char *name,const DeviceStatus* deviceStatus) {
 	JSON_Object *root_object = json_value_get_object(root_value);
 	json_object_set_number (root_object, "id", deviceStatus->ID);
 	json_object_set_boolean(root_object, "eth", deviceStatus->Ethertnet);
-	json_object_set_boolean(root_object, "gprs", deviceStatus->Gpgrs);
+	json_object_set_boolean(root_object, "gprs", deviceStatus->Gprs);
 	json_object_set_boolean(root_object, "gps", deviceStatus->Gps);
 	json_object_set_boolean(root_object, "usb", deviceStatus->Gps);
 	ShareSetJson(name, root_value);

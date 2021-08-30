@@ -51,6 +51,8 @@
 #define ETH_RX_BUFFER_SIZE 1524
 /*----- Default Value for MEMP_NUM_UDP_PCB: 4 ---*/
 #define MEMP_NUM_UDP_PCB 1
+/*----- Default Value for MEMP_NUM_TCP_PCB: 5 ---*/
+#define MEMP_NUM_TCP_PCB 10
 /*----- Value in opt.h for MEM_ALIGNMENT: 1 -----*/
 #define MEM_ALIGNMENT 4
 /*----- Default Value for H7 devices: 0x30044000 -----*/

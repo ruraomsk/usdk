@@ -12,6 +12,7 @@ RM := rm -rf
 -include share/subdir.mk
 -include parson/subdir.mk
 -include libmodbus/subdir.mk
+-include Transport/subdir.mk
 -include MobusTCP/subdir.mk
 -include Middlewares/Third_Party/LwIP/system/OS/subdir.mk
 -include Middlewares/Third_Party/LwIP/src/netif/ppp/subdir.mk
@@ -27,12 +28,10 @@ RM := rm -rf
 -include Middlewares/Third_Party/FreeRTOS/Source/subdir.mk
 -include LWIP/Target/subdir.mk
 -include LWIP/App/subdir.mk
--include EthernetTCP/subdir.mk
 -include Drivers/STM32H7xx_HAL_Driver/Src/subdir.mk
 -include Drivers/BSP/Components/lan8742/subdir.mk
 -include DeviceTime/subdir.mk
 -include DeviceLogger/subdir.mk
--include Device/subdir.mk
 -include DebugLogger/subdir.mk
 -include Core/Startup/subdir.mk
 -include Core/Src/subdir.mk
