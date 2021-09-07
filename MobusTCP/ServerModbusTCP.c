@@ -9,8 +9,8 @@
 #include "DebugLogger.h"
 #include "sockets.h"
 
-static fd_set refset;
-static int fdmax;
+//static fd_set refset;
+//static int fdmax;
 void ServerModbusTCPLoop() {
 	modbus_t *ctx = modbus_new_tcp("0.0.0.0", 502);
 	uint8_t *query = (uint8_t*) malloc(MODBUS_TCP_MAX_ADU_LENGTH);

@@ -15,16 +15,12 @@ extern "C" {
 #include "cmsis_os.h"
 #include "parson.h"
 
-void ShareInit(void);
+int FilesInit(void);
 
-typedef struct sharevalue {
-	JSON_Value *json_root;
-	int changed;
-} ShareValue;
 
 void ShareSaveChange(void);
-JSON_Value* ShareGetJson(const char *chart);
-void ShareSetJson(const char *chart, JSON_Value *value);
+JSON_Value* ShareGetJson(char *chart);
+void ShareSetJson(char *chart, JSON_Value *value);
 
 #ifdef __cplusplus
 }

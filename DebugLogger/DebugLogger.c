@@ -13,22 +13,22 @@
 #include "lwip.h"
 #include "parson.h"
 #include "udp.h"
-#include "share.h"
+#include "Files.h"
 #include <stdarg.h>
 
 static osMessageQueueId_t DebugLoggerQueue;
 static osMutexId_t DebugLoggerMutex;
 extern char ReadyETH;
-char* LoggerBuffer;
+char* LoggerBuffer=NULL;
 struct {
 	ip_addr_t ipAddr;
 	int adr1, adr2, adr3, adr4;
 	unsigned int port;
 } debugSetup;
 void Debug_Init() {
-	DebugLoggerQueue = osMessageQueueNew(16, sizeof(DebugLoggerMsg), NULL);
+	DebugLoggerQueue = osMessageQueueNew(160, sizeof(DebugLoggerMsg), NULL);
 	DebugLoggerMutex = osMutexNew(NULL);
-	LoggerBuffer=malloc(1024);
+	LoggerBuffer=malloc(2048);
 }
 void Debug_Message(int level, char *fmt, ...) {
 	if (osMutexAcquire(DebugLoggerMutex, osWaitForever) == osOK) {
@@ -48,6 +48,8 @@ void Debug_Message(int level, char *fmt, ...) {
 		osMessageQueuePut(DebugLoggerQueue, newLog, 0, 0);
 		free(newLog);
 		osMutexRelease(DebugLoggerMutex);
+	} else {
+		printf("error");
 	}
 }
 char* Debuger_Status(int level) {
@@ -67,14 +69,13 @@ char* Debuger_Status(int level) {
 void DebugLoggerLoop() {
 	struct udp_pcb *udp;
 	DebugReadSetup();
-	DebugWriteSetup();
 	udp = udp_new();
 	udp_connect(udp, &debugSetup.ipAddr, debugSetup.port);
 	Debug_Message(LOG_INFO, "Logger запущен");
 	/* Infinite loop */
 	for (;;) {
 		DebugLoggerMsg msg;
-		if (osMessageQueueGet(DebugLoggerQueue, &msg, NULL, 0) == osOK) {
+		if (osMessageQueueGet(DebugLoggerQueue, &msg, NULL, osWaitForever) == osOK) {
 			if (ReadyETH) {
 				sprintf(LoggerBuffer, "%s:%6s:%s\n\r", TimeToString(msg.time),
 						Debuger_Status(msg.Level), msg.Buffer);
@@ -89,11 +90,16 @@ void DebugLoggerLoop() {
 			}
 			osDelay(100);
 
+		}else {
+			printf("error");
 		}
 	}
 }
 void DebugReadSetup(void) {
 	JSON_Value *root = ShareGetJson("debug");
+	if (root==NULL){
+		printf("ERROR");
+	}
 	JSON_Object *object = json_value_get_object(root);
 	debugSetup.port = (int) json_object_get_number(object, "port");
 	sscanf(json_object_get_string(object, "ip"), "%d.%d.%d.%d",

@@ -20,7 +20,7 @@ static RingBuffer* devicelogs;
 char tempBuffer[MAX_LEN_MESSAGE];
 void DeviceLogInit(){
 	LogDevMutex=osMutexNew(NULL);
-	devicelogs=newRingBuffer(CAPACITY_MESSAGE, sizeof(DeviceLoggerMessage));
+	devicelogs=newRingBuffer(CAPACITY_MESSAGES, sizeof(DeviceLoggerMessage));
 	//Если буфер переполнился то удаляем самое старое сообщение
 	setOverWriteRingBuffer(devicelogs);
 	if(devicelogs==NULL){

@@ -12,7 +12,7 @@
 #include "parson.h"
 
 #define MAX_LEN_MESSAGE 60    		//Максимальная длина строки сообщения
-#define CAPACITY_MESSAGE 250		//Мксимальное  число элементов в буфере логов
+#define CAPACITY_MESSAGES 250		//Мксимальное  число элементов в буфере логов
 #define END_SUB 	0
 #define SHARE_SUB 	1
 #define LOG_SUB 	2
@@ -30,6 +30,7 @@ typedef struct {
 void DeviceLog(char subsytem,const char*message);
 void DeviceLogInit(void);
 JSON_Value* DeviceLogToJSON(void);
+void initFiles(void);
 
 
 #endif /* DEVICELOGGER_H_ */

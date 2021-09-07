@@ -15,9 +15,12 @@
 #define true 1
 #define false 0
 
+#define STEP_TCP 				3000
+#define STEP_GPRS 				3000
+
 #define DeviceBufferSize 1024
 #define MAX_LEN_TCP_MESSAGE 2048
-
+#define STEP_CONTROL 100
 enum {
 	TRANSPORT_OK=0,
 	TRANSPORT_ERROR,
@@ -39,10 +42,19 @@ typedef struct {
 
 void mainTransportLoop(void);
 
-DeviceStatus readSetup(const char *name);
-void writeSetup(const char *name,const DeviceStatus* deviceStatus);
+DeviceStatus readSetup( char *name);
+void writeSetup(char *name,const DeviceStatus* deviceStatus);
 void makeConnectString(char *buffer,const size_t buffersize,const char *typestring,const DeviceStatus* deviceStatus);
-void veryBad(char *buffer,int socket,osMessageQueueId_t que);
+void BadTCP(char *buffer,int socket,osMessageQueueId_t que);
+void BadGPRS(char *buffer,int socket,osMessageQueueId_t que);
+void setGoodTCP(int v);
+void setGoodGPRS(int v);
+int  isGoodTCP(void);
+int  isGoodGPRS(void);
+void setFromServerTCPStart(int v);
+void setFromServerGPRSStart(int v);
+void setGPRSNeed(int v);
+
 
 void FromServerTCPLoop(void);
 void ToServerTCPLoop(void);

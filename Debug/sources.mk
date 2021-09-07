@@ -20,6 +20,7 @@ OBJCOPY_BIN :=
 
 # Every subdirectory with source files must be described here
 SUBDIRS := \
+Cameras \
 Core/Src \
 Core/Startup \
 DebugLogger \
@@ -27,8 +28,12 @@ DeviceLogger \
 DeviceTime \
 Drivers/BSP/Components/lan8742 \
 Drivers/STM32H7xx_HAL_Driver/Src \
+FatFs \
+Files \
 LWIP/App \
 LWIP/Target \
+Middlewares/ST/STM32_USB_Device_Library/Class/MSC/Src \
+Middlewares/ST/STM32_USB_Device_Library/Core/Src \
 Middlewares/Third_Party/FreeRTOS/Source/CMSIS_RTOS_V2 \
 Middlewares/Third_Party/FreeRTOS/Source \
 Middlewares/Third_Party/FreeRTOS/Source/portable/GCC/ARM_CM4F \
@@ -43,7 +48,8 @@ Middlewares/Third_Party/LwIP/src/netif/ppp \
 Middlewares/Third_Party/LwIP/system/OS \
 MobusTCP \
 Transport \
+USB_DEVICE/App \
+USB_DEVICE/Target \
 libmodbus \
 parson \
-share \
 

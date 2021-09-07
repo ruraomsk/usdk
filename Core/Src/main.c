@@ -21,18 +21,23 @@
 #include "main.h"
 #include "cmsis_os.h"
 #include "lwip.h"
+#include "usb_device.h"
+#include "usb_device.h"
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include "lwip/udp.h"
 #include <string.h>
-#include "share.h"
+#include "Files.h"
 #include "parson.h"
 #include "DeviceTime.h"
+#include "DeviceLogger.h"
 #include "ServerModbusTCP.h"
 #include "ClientModbusTCP.h"
 #include "Transport.h"
 #include "modbus.h"
+#include "Camera.h"
+
 
 /* USER CODE END Includes */
 
@@ -44,10 +49,8 @@
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
 
-#define STEP_TCP 				60000
-#define STEP_GPRS 				60000
 
-#define STEP_SHARE 				10000
+#define STEP_SHARE 				100000
 #define STEP_SERVER_MODBUS_TCP 	1000
 #define STEP_CLIENT_MODBUS_TCP 	10000
 
@@ -62,70 +65,22 @@
 
 UART_HandleTypeDef huart4;
 
-/* Definitions for defaultTask */
-osThreadId_t defaultTaskHandle;
-const osThreadAttr_t defaultTask_attributes = {
-  .name = "defaultTask",
+/* Definitions for MainTask */
+osThreadId_t MainTaskHandle;
+const osThreadAttr_t MainTask_attributes = {
+  .name = "MainTask",
   .stack_size = 1024 * 4,
-  .priority = (osPriority_t) osPriorityRealtime,
-};
-/* Definitions for DebugLogger */
-osThreadId_t DebugLoggerHandle;
-const osThreadAttr_t DebugLogger_attributes = {
-  .name = "DebugLogger",
-  .stack_size = 1024 * 4,
-  .priority = (osPriority_t) osPriorityRealtime,
-};
-/* Definitions for ToServerTCP */
-osThreadId_t ToServerTCPHandle;
-const osThreadAttr_t ToServerTCP_attributes = {
-  .name = "ToServerTCP",
-  .stack_size = 1024 * 4,
-  .priority = (osPriority_t) osPriorityRealtime,
-};
-/* Definitions for ServerModbusTCP */
-osThreadId_t ServerModbusTCPHandle;
-const osThreadAttr_t ServerModbusTCP_attributes = {
-  .name = "ServerModbusTCP",
-  .stack_size = 256 * 4,
-  .priority = (osPriority_t) osPriorityLow,
-};
-/* Definitions for ClientModbusTCP */
-osThreadId_t ClientModbusTCPHandle;
-const osThreadAttr_t ClientModbusTCP_attributes = {
-  .name = "ClientModbusTCP",
-  .stack_size = 256 * 4,
-  .priority = (osPriority_t) osPriorityLow,
-};
-/* Definitions for FromServerTCP */
-osThreadId_t FromServerTCPHandle;
-const osThreadAttr_t FromServerTCP_attributes = {
-  .name = "FromServerTCP",
-  .stack_size = 1024 * 4,
-  .priority = (osPriority_t) osPriorityLow,
-};
-/* Definitions for ToServerGPRS */
-osThreadId_t ToServerGPRSHandle;
-const osThreadAttr_t ToServerGPRS_attributes = {
-  .name = "ToServerGPRS",
-  .stack_size = 1024 * 4,
-  .priority = (osPriority_t) osPriorityLow,
-};
-/* Definitions for FromServerGPRS */
-osThreadId_t FromServerGPRSHandle;
-const osThreadAttr_t FromServerGPRS_attributes = {
-  .name = "FromServerGPRS",
-  .stack_size = 1024 * 4,
-  .priority = (osPriority_t) osPriorityLow,
+  .priority = (osPriority_t) osPriorityNormal,
 };
 /* Definitions for TCPTransport */
 osThreadId_t TCPTransportHandle;
 const osThreadAttr_t TCPTransport_attributes = {
   .name = "TCPTransport",
-  .stack_size = 256 * 4,
-  .priority = (osPriority_t) osPriorityLow,
+  .stack_size = 1024 * 4,
+  .priority = (osPriority_t) osPriorityRealtime,
 };
 /* USER CODE BEGIN PV */
+
 
 /* USER CODE END PV */
 
@@ -134,14 +89,7 @@ void SystemClock_Config(void);
 static void MPU_Config(void);
 static void MX_GPIO_Init(void);
 static void MX_UART4_Init(void);
-void StartDefaultTask(void *argument);
-void StartDebugLogger(void *argument);
-void StartToServerTCP(void *argument);
-void StartServerModbusTCP(void *argument);
-void StartClientModbusTCP(void *argument);
-void StartFromServerTCP(void *argument);
-void StartToServerGPRS(void *argument);
-void StartFromServerGPRS(void *argument);
+void StartMainTask(void *argument);
 void StartTCPTransport(void *argument);
 
 /* USER CODE BEGIN PFP */
@@ -150,31 +98,8 @@ void StartTCPTransport(void *argument);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-char ReadyETH=false;			//Готовность Ehernet
-char ReadyShare=false;			//Готовность Share
-int TransportNeed=0;		//Готовность работы транспортного протокола
-int GPRSNeed=0;			//Готовность работы GPRS если есть
-
-//Очереди для Ethernet
-osMessageQueueId_t ToServerQueue;
-osMessageQueueId_t FromServerQueue;
-osMessageQueueId_t ToServerSecQueue;
-osMessageQueueId_t FromServerSecQueue;
-
-//Очереди для GPRS
-osMessageQueueId_t GPRSToServerQueue;
-osMessageQueueId_t GPRSFromServerQueue;
-osMessageQueueId_t GPRSToServerSecQueue;
-osMessageQueueId_t GPRSFromServerSecQueue;
-
-//Очереди от основной программы управления
-osMessageQueueId_t MainChangeStatus;
-osMessageQueueId_t MainToServerQueue;
-osMessageQueueId_t MainFromServerQueue;
-osMessageQueueId_t MainToServerSecQueue;
-osMessageQueueId_t MainFromServerSecQueue;
-
-
+int ReadyETH=false;			//Готовность Ehernet
+int ReadyFiles=false;			//Готовность Share
 /* USER CODE END 0 */
 
 /**
@@ -215,7 +140,12 @@ int main(void)
   MX_GPIO_Init();
   MX_UART4_Init();
   /* USER CODE BEGIN 2 */
-  Debug_Init();
+  //USB Device
+//  HAL_PWREx_EnableUSBVoltageDetector();
+//  USBD_Init(&USBD_Device, &MSC_Desc, 0);
+//  USBD_RegisterClass(&USBD_Device, &USBD_DISK_fops);
+//  USBD_Start(&USBD_Device);
+
   /* USER CODE END 2 */
 
   /* Init scheduler */
@@ -241,29 +171,8 @@ int main(void)
   /* USER CODE END RTOS_QUEUES */
 
   /* Create the thread(s) */
-  /* creation of defaultTask */
-  defaultTaskHandle = osThreadNew(StartDefaultTask, NULL, &defaultTask_attributes);
-
-  /* creation of DebugLogger */
-  DebugLoggerHandle = osThreadNew(StartDebugLogger, NULL, &DebugLogger_attributes);
-
-  /* creation of ToServerTCP */
-  ToServerTCPHandle = osThreadNew(StartToServerTCP, NULL, &ToServerTCP_attributes);
-
-  /* creation of ServerModbusTCP */
-  ServerModbusTCPHandle = osThreadNew(StartServerModbusTCP, NULL, &ServerModbusTCP_attributes);
-
-  /* creation of ClientModbusTCP */
-  ClientModbusTCPHandle = osThreadNew(StartClientModbusTCP, NULL, &ClientModbusTCP_attributes);
-
-  /* creation of FromServerTCP */
-  FromServerTCPHandle = osThreadNew(StartFromServerTCP, NULL, &FromServerTCP_attributes);
-
-  /* creation of ToServerGPRS */
-  ToServerGPRSHandle = osThreadNew(StartToServerGPRS, NULL, &ToServerGPRS_attributes);
-
-  /* creation of FromServerGPRS */
-  FromServerGPRSHandle = osThreadNew(StartFromServerGPRS, NULL, &FromServerGPRS_attributes);
+  /* creation of MainTask */
+  MainTaskHandle = osThreadNew(StartMainTask, NULL, &MainTask_attributes);
 
   /* creation of TCPTransport */
   TCPTransportHandle = osThreadNew(StartTCPTransport, NULL, &TCPTransport_attributes);
@@ -306,7 +215,7 @@ void SystemClock_Config(void)
   HAL_PWREx_ConfigSupply(PWR_LDO_SUPPLY);
   /** Configure the main internal regulator output voltage
   */
-  __HAL_PWR_VOLTAGESCALING_CONFIG(PWR_REGULATOR_VOLTAGE_SCALE1);
+  __HAL_PWR_VOLTAGESCALING_CONFIG(PWR_REGULATOR_VOLTAGE_SCALE3);
 
   while(!__HAL_PWR_GET_FLAG(PWR_FLAG_VOSRDY)) {}
   /** Initializes the RCC Oscillators according to the specified parameters
@@ -316,12 +225,12 @@ void SystemClock_Config(void)
   RCC_OscInitStruct.HSEState = RCC_HSE_BYPASS;
   RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
   RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSE;
-  RCC_OscInitStruct.PLL.PLLM = 4;
-  RCC_OscInitStruct.PLL.PLLN = 400;
+  RCC_OscInitStruct.PLL.PLLM = 1;
+  RCC_OscInitStruct.PLL.PLLN = 24;
   RCC_OscInitStruct.PLL.PLLP = 2;
-  RCC_OscInitStruct.PLL.PLLQ = 2;
+  RCC_OscInitStruct.PLL.PLLQ = 4;
   RCC_OscInitStruct.PLL.PLLR = 2;
-  RCC_OscInitStruct.PLL.PLLRGE = RCC_PLL1VCIRANGE_1;
+  RCC_OscInitStruct.PLL.PLLRGE = RCC_PLL1VCIRANGE_3;
   RCC_OscInitStruct.PLL.PLLVCOSEL = RCC_PLL1VCOWIDE;
   RCC_OscInitStruct.PLL.PLLFRACN = 0;
   if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK)
@@ -335,11 +244,11 @@ void SystemClock_Config(void)
                               |RCC_CLOCKTYPE_D3PCLK1|RCC_CLOCKTYPE_D1PCLK1;
   RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_PLLCLK;
   RCC_ClkInitStruct.SYSCLKDivider = RCC_SYSCLK_DIV1;
-  RCC_ClkInitStruct.AHBCLKDivider = RCC_HCLK_DIV2;
-  RCC_ClkInitStruct.APB3CLKDivider = RCC_APB3_DIV2;
+  RCC_ClkInitStruct.AHBCLKDivider = RCC_HCLK_DIV1;
+  RCC_ClkInitStruct.APB3CLKDivider = RCC_APB3_DIV1;
   RCC_ClkInitStruct.APB1CLKDivider = RCC_APB1_DIV2;
-  RCC_ClkInitStruct.APB2CLKDivider = RCC_APB2_DIV2;
-  RCC_ClkInitStruct.APB4CLKDivider = RCC_APB4_DIV2;
+  RCC_ClkInitStruct.APB2CLKDivider = RCC_APB2_DIV1;
+  RCC_ClkInitStruct.APB4CLKDivider = RCC_APB4_DIV1;
 
   if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_2) != HAL_OK)
   {
@@ -414,9 +323,6 @@ static void MX_GPIO_Init(void)
   __HAL_RCC_GPIOE_CLK_ENABLE();
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOB, LD1_Pin|LD3_Pin, GPIO_PIN_RESET);
-
-  /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(USB_OTG_FS_PWR_EN_GPIO_Port, USB_OTG_FS_PWR_EN_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
@@ -428,11 +334,20 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(B1_GPIO_Port, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : LD1_Pin LD3_Pin */
-  GPIO_InitStruct.Pin = LD1_Pin|LD3_Pin;
-  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+  /*Configure GPIO pin : PB0 */
+  GPIO_InitStruct.Pin = GPIO_PIN_0;
+  GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;
+  GPIO_InitStruct.Alternate = GPIO_AF10_OTG2_HS;
+  HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
+
+  /*Configure GPIO pin : PB14 */
+  GPIO_InitStruct.Pin = GPIO_PIN_14;
+  GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+  GPIO_InitStruct.Alternate = GPIO_AF12_OTG2_FS;
   HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
 
   /*Configure GPIO pins : STLINK_RX_Pin STLINK_TX_Pin */
@@ -456,14 +371,6 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(USB_OTG_FS_OVCR_GPIO_Port, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : PA8 PA11 PA12 */
-  GPIO_InitStruct.Pin = GPIO_PIN_8|GPIO_PIN_11|GPIO_PIN_12;
-  GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
-  GPIO_InitStruct.Pull = GPIO_NOPULL;
-  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-  GPIO_InitStruct.Alternate = GPIO_AF10_OTG1_FS;
-  HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
-
   /*Configure GPIO pin : LD2_Pin */
   GPIO_InitStruct.Pin = LD2_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
@@ -477,188 +384,30 @@ static void MX_GPIO_Init(void)
 
 /* USER CODE END 4 */
 
-/* USER CODE BEGIN Header_StartDefaultTask */
+/* USER CODE BEGIN Header_StartMainTask */
 /**
- * @brief  Function implementing the defaultTask thread.
- * @param  argument: Not used
- * @retval None
- */
-/* USER CODE END Header_StartDefaultTask */
-void StartDefaultTask(void *argument)
+  * @brief  Function implementing the MainTask thread.
+  * @param  argument: Not used
+  * @retval None
+  */
+/* USER CODE END Header_StartMainTask */
+void StartMainTask(void *argument)
 {
   /* init code for LWIP */
   MX_LWIP_Init();
+
+  /* init code for USB_DEVICE */
+  MX_USB_DEVICE_Init();
   /* USER CODE BEGIN 5 */
-
-  ShareInit();
-  Debug_Message(LOG_INFO, "Запущена основная задача");
-
+  ReadyETH=1;
+  FilesInit();
+  Debug_Init();
+  Debug_Message(LOG_INFO, "Запущена основная задача и логгер");
+  DeviceLogInit();
   for (;;) {
-	  osDelay(STEP_SHARE);
-
-	  ShareSaveChange();
+	  DebugLoggerLoop();
   }
   /* USER CODE END 5 */
-}
-
-/* USER CODE BEGIN Header_StartDebugLogger */
-/**
-* @brief Function implementing the DebugLogger thread.
-* @param argument: Not used
-* @retval None
-*/
-/* USER CODE END Header_StartDebugLogger */
-void StartDebugLogger(void *argument)
-{
-  /* USER CODE BEGIN StartDebugLogger */
-  /* Infinite loop */
-	while (!ReadyShare) {
-		osDelay(100);
-	}
-	DebugLoggerLoop();
-  /* USER CODE END StartDebugLogger */
-}
-
-/* USER CODE BEGIN Header_StartToServerTCP */
-/**
-* @brief Function implementing the ToServerTCP thread.
-* @param argument: Not used
-* @retval None
-*/
-/* USER CODE END Header_StartToServerTCP */
-void StartToServerTCP(void *argument)
-{
-  /* USER CODE BEGIN StartToServerTCP */
-  /* Infinite loop */
-	while(TransportNeed==0){
-		osDelay(100);
-	}
-	while(1){
-		Debug_Message(LOG_INFO, "Запускаем ToServerTCP");
-		ToServerTCPLoop();
-		osDelay(STEP_TCP);
-
-	}
-  /* USER CODE END StartToServerTCP */
-}
-
-/* USER CODE BEGIN Header_StartServerModbusTCP */
-/**
-* @brief Function implementing the ServerModbusTCP thread.
-* @param argument: Not used
-* @retval None
-*/
-/* USER CODE END Header_StartServerModbusTCP */
-void StartServerModbusTCP(void *argument)
-{
-  /* USER CODE BEGIN StartServerModbusTCP */
-  /* Infinite loop */
-	while (!ReadyShare) {
-		osDelay(100);
-	}
-	while(1){
-		Debug_Message(LOG_INFO, "Запускаем сервер Modbus");
-		ServerModbusTCPLoop();
-		osDelay(STEP_SERVER_MODBUS_TCP);
-	}
-  /* USER CODE END StartServerModbusTCP */
-}
-
-/* USER CODE BEGIN Header_StartClientModbusTCP */
-/**
-* @brief Function implementing the ClientModbusTCP thread.
-* @param argument: Not used
-* @retval None
-*/
-/* USER CODE END Header_StartClientModbusTCP */
-void StartClientModbusTCP(void *argument)
-{
-  /* USER CODE BEGIN StartClientModbusTCP */
-  /* Infinite loop */
-	while (!ReadyShare) {
-		osDelay(100);
-	}
-	while(1){
-		Debug_Message(LOG_INFO, "Запускаем клиента Modbus");
-		ClientModbusTCPLoop();
-		osDelay(STEP_CLIENT_MODBUS_TCP);
-	}
-  /* USER CODE END StartClientModbusTCP */
-}
-
-/* USER CODE BEGIN Header_StartFromServerTCP */
-/**
-* @brief Function implementing the FromServerTCP thread.
-* @param argument: Not used
-* @retval None
-*/
-/* USER CODE END Header_StartFromServerTCP */
-void StartFromServerTCP(void *argument)
-{
-  /* USER CODE BEGIN StartFromServerTCP */
-  /* Infinite loop */
-	while(TransportNeed==0){
-		osDelay(100);
-	}
-	while(1){
-		Debug_Message(LOG_INFO, "Запускаем FromServerTCP");
-		FromServerTCPLoop();
-		osDelay(STEP_TCP);
-
-	}
-  /* USER CODE END StartFromServerTCP */
-}
-
-/* USER CODE BEGIN Header_StartToServerGPRS */
-/**
-* @brief Function implementing the ToServerGPRS thread.
-* @param argument: Not used
-* @retval None
-*/
-/* USER CODE END Header_StartToServerGPRS */
-void StartToServerGPRS(void *argument)
-{
-  /* USER CODE BEGIN StartToServerGPRS */
-  /* Infinite loop */
-	while(TransportNeed==0){
-		osDelay(100);
-	}
-	while(1){
-		while(GPRSNeed==0){
-			osDelay(1000);
-		}
-		Debug_Message(LOG_INFO, "Запускаем ToServerGPRS");
-		ToServerGPRSLoop();
-		osDelay(STEP_GPRS);
-
-	}
-  /* USER CODE END StartToServerGPRS */
-}
-
-/* USER CODE BEGIN Header_StartFromServerGPRS */
-/**
-* @brief Function implementing the FromServerGPRS thread.
-* @param argument: Not used
-* @retval None
-*/
-/* USER CODE END Header_StartFromServerGPRS */
-void StartFromServerGPRS(void *argument)
-{
-  /* USER CODE BEGIN StartFromServerGPRS */
-  /* Infinite loop */
-	while(TransportNeed==0){
-		osDelay(100);
-	}
-	while(1){
-		while(GPRSNeed==0){
-			osDelay(1000);
-		}
-		Debug_Message(LOG_INFO, "Запускаем FromServerGPRS");
-		FromServerGPRSLoop();
-		osDelay(STEP_GPRS);
-
-	}
-  /* USER CODE END StartFromServerGPRS */
 }
 
 /* USER CODE BEGIN Header_StartTCPTransport */
@@ -672,12 +421,13 @@ void StartTCPTransport(void *argument)
 {
   /* USER CODE BEGIN StartTCPTransport */
   /* Infinite loop */
-	while (!ReadyShare) {
+	while (!ReadyFiles) {
 		osDelay(100);
 	}
 	while(1){
 		Debug_Message(LOG_INFO, "Запускаем Transport");
 		mainTransportLoop();
+		osDelay(1000);
 		Debug_Message(LOG_ERROR, "Вышли из Transport");
 	}
   /* USER CODE END StartTCPTransport */

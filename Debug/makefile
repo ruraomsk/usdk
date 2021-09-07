@@ -9,9 +9,10 @@ RM := rm -rf
 
 # All of the sources participating in the build are defined here
 -include sources.mk
--include share/subdir.mk
 -include parson/subdir.mk
 -include libmodbus/subdir.mk
+-include USB_DEVICE/Target/subdir.mk
+-include USB_DEVICE/App/subdir.mk
 -include Transport/subdir.mk
 -include MobusTCP/subdir.mk
 -include Middlewares/Third_Party/LwIP/system/OS/subdir.mk
@@ -26,8 +27,12 @@ RM := rm -rf
 -include Middlewares/Third_Party/FreeRTOS/Source/portable/GCC/ARM_CM4F/subdir.mk
 -include Middlewares/Third_Party/FreeRTOS/Source/CMSIS_RTOS_V2/subdir.mk
 -include Middlewares/Third_Party/FreeRTOS/Source/subdir.mk
+-include Middlewares/ST/STM32_USB_Device_Library/Core/Src/subdir.mk
+-include Middlewares/ST/STM32_USB_Device_Library/Class/MSC/Src/subdir.mk
 -include LWIP/Target/subdir.mk
 -include LWIP/App/subdir.mk
+-include Files/subdir.mk
+-include FatFs/subdir.mk
 -include Drivers/STM32H7xx_HAL_Driver/Src/subdir.mk
 -include Drivers/BSP/Components/lan8742/subdir.mk
 -include DeviceTime/subdir.mk
@@ -35,6 +40,7 @@ RM := rm -rf
 -include DebugLogger/subdir.mk
 -include Core/Startup/subdir.mk
 -include Core/Src/subdir.mk
+-include Cameras/subdir.mk
 -include subdir.mk
 -include objects.mk
 
