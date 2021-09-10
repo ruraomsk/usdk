@@ -40,19 +40,22 @@ void deleteRingBuffer(RingBuffer* rb) {
 int RingBufferTryWrite(RingBuffer* rb, void* element) {
 	if(rb == NULL) return RINGBUFFER_ERR_NULL;
 
-	if(rb->writeptr + rb->elementsize == rb->readptr && !rb->overwrite){
-		return RINGBUFFER_ERR_FULL;
-	}
-	if(rb->writeptr + rb->elementsize == rb->readptr && rb->overwrite){
-		//Буфер полон убираем чтением первое сообщение
-		void* tmp = malloc(rb->elementsize);
-		RingBufferTryRead(rb, tmp);
-		free(tmp);
+	void* tmp = rb->writeptr + rb->elementsize;
+	if(tmp >= rb->end) tmp = rb->start;
+
+	if(tmp == rb->readptr){
+		if (!rb->overwrite) return RINGBUFFER_ERR_FULL;
+		else {
+			//Буфер полон убираем чтением первое сообщение
+			void* tmp = malloc(rb->elementsize);
+			RingBufferTryRead(rb, tmp);
+			free(tmp);
+		}
 	}
 
 	memcpy(rb->writeptr,element,rb->elementsize);
 
-	void* tmp = rb->writeptr + rb->elementsize;
+	tmp = rb->writeptr + rb->elementsize;
 	if(tmp >= rb->end) tmp = rb->start;
 	rb->writeptr = tmp;
 

@@ -10,6 +10,7 @@
 
 #include "lwip.h"
 #include "DebugLogger.h"
+#include "DeviceLogger.h"
 #include "Transport.h"
 #include "parson.h"
 #include "sockets.h"
@@ -25,7 +26,7 @@ void ToServerGPRSLoop(void) {
 	if (isGoodTCP()) return;
 	DeviceStatus deviceStatus = readSetup("setup");
 	if (!deviceStatus.Gprs) {
-		Debug_Message(LOG_ERROR, "ToServer Нет GPRS");
+		DeviceLog(SUB_TRANSPORT, "ToServer Нет GPRS");
 		BadGPRS(buffer,socket,GPRSFromServerSecQueue);
 		return;
 	}
@@ -41,7 +42,7 @@ void ToServerGPRSLoop(void) {
 	srv_addr.sin_port = htons((int ) json_object_get_number(object, "port"));
 	socket = socket(AF_INET, SOCK_STREAM, 0);
 	if (socket < 0) {
-		Debug_Message(LOG_ERROR, "ToServerGPRS Не могу создать сокет %d", errno);
+		DeviceLog(SUB_TRANSPORT, "ToServerGPRS Не могу создать сокет %d", errno);
 		BadGPRS(buffer,socket,GPRSFromServerSecQueue);
 		return;
 	}
@@ -57,7 +58,7 @@ void ToServerGPRSLoop(void) {
 	err = connect(socket, (struct sockaddr* ) &srv_addr,
 			sizeof(struct sockaddr_in));
 	if (err != 0) {
-		Debug_Message(LOG_ERROR,
+		DeviceLog(SUB_TRANSPORT,
 				"ToServerGPRS Нет соединения с сервером по резервному каналу");
 		BadGPRS(buffer,socket,GPRSFromServerSecQueue);
 		return;
@@ -70,7 +71,7 @@ void ToServerGPRSLoop(void) {
 	err = send(socket, buffer, strlen(buffer), 0);
 	osDelay(100);
 	if (err < 0) {
-		Debug_Message(LOG_ERROR, "ToServerGPRS Не смог передать строку %s", buffer);
+		DeviceLog(SUB_TRANSPORT, "ToServerGPRS Не смог передать строку %.20s", buffer);
 		BadGPRS(buffer,socket,GPRSFromServerSecQueue);
 		return;
 	}
@@ -84,7 +85,7 @@ void ToServerGPRSLoop(void) {
 			}
 		}
 		if(msg.error==TRANSPORT_STOP){
-			Debug_Message(LOG_ERROR, "ToServerGPRS Приказали остановиться");
+			DeviceLog(SUB_TRANSPORT, "ToServerGPRS Приказали остановиться");
 			BadGPRS(buffer,socket,GPRSFromServerSecQueue);
 			return;
 		}
@@ -96,7 +97,7 @@ void ToServerGPRSLoop(void) {
 		err = send(socket, buffer, strlen(buffer), 0);
 		osDelay(100);
 		if (err < 0) {
-			Debug_Message(LOG_ERROR, "ToServerGPRS Не смог передать строку %s", buffer);
+			DeviceLog(SUB_TRANSPORT, "ToServerGPRS Не смог передать строку %.20s", buffer);
 			BadGPRS(buffer,socket,GPRSFromServerSecQueue);
 			return;
 		}
@@ -105,12 +106,12 @@ void ToServerGPRSLoop(void) {
 		memset(buffer,0,MAX_LEN_TCP_MESSAGE);
 		len = recv(socket, buffer, MAX_LEN_TCP_MESSAGE-1, 0);
 		if (len < 1) {
-			Debug_Message(LOG_ERROR, "ToServerGPRS Ошибка чтения ");
+			DeviceLog(SUB_TRANSPORT, "ToServerGPRS Ошибка чтения ");
 			BadGPRS(buffer,socket,GPRSFromServerSecQueue);
 			return;
 		}
 		if (buffer[len - 1] != '\n'){
-			Debug_Message(LOG_ERROR, "ToServerGPRS Неверное завершение строки %s",buffer);
+			DeviceLog(SUB_TRANSPORT, "ToServerGPRS Неверное завершение строки %.20s",buffer);
 			BadGPRS(buffer,socket,GPRSFromServerSecQueue);
 			return;
 		}

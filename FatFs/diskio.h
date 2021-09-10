@@ -90,8 +90,8 @@ int USB_disk_write(const BYTE * buff, LBA_t sector, UINT count);
 
 int RAM_disk_ioctl(	BYTE pdrv,	BYTE cmd,void *buff);
 
-int MMC_disk_ioctl();
-int USB_disk_ioctl();
+int MMC_disk_ioctl(BYTE pdrv,	BYTE cmd,void *buff);
+int USB_disk_ioctl(BYTE pdrv,	BYTE cmd,void *buff);
 
 #ifdef __cplusplus
 }

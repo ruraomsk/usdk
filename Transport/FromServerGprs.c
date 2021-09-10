@@ -7,6 +7,7 @@
 
 #include "lwip.h"
 #include "DebugLogger.h"
+#include "DeviceLogger.h"
 #include "Transport.h"
 #include "parson.h"
 #include "sockets.h"
@@ -21,7 +22,7 @@ void FromServerGPRSLoop(void) {
 	if (isGoodTCP()) return;
 	DeviceStatus deviceStatus = readSetup("setup");
 	if (!deviceStatus.Gprs) {
-		Debug_Message(LOG_ERROR, "FromServer Нет GPRS");
+		DeviceLog(SUB_TRANSPORT, "FromServer Нет GPRS");
 		BadGPRS(buffer, socket, GPRSFromServerQueue);
 		return;
 	}
@@ -37,7 +38,7 @@ void FromServerGPRSLoop(void) {
 	srv_addr.sin_port = htons((int ) json_object_get_number(object, "port"));
 	socket = socket(AF_INET, SOCK_STREAM, 0);
 	if (socket < 0) {
-		Debug_Message(LOG_ERROR, "FromServerGPRS Не могу создать сокет %d", errno);
+		DeviceLog(SUB_TRANSPORT, "FromServerGPRS Не могу создать сокет %d", errno);
 		BadGPRS(buffer, socket, GPRSFromServerQueue);
 		return;
 	}
@@ -53,7 +54,7 @@ void FromServerGPRSLoop(void) {
 	err = connect(socket, (struct sockaddr* ) &srv_addr,
 			sizeof(struct sockaddr_in));
 	if (err != 0) {
-		Debug_Message(LOG_ERROR,
+		DeviceLog(SUB_TRANSPORT,
 				"FromServerGPRS Нет соединения с сервером по основному каналу");
 		BadGPRS(buffer, socket, GPRSFromServerQueue);
 		return;
@@ -66,7 +67,7 @@ void FromServerGPRSLoop(void) {
 	err = send(socket, buffer, strlen(buffer), 0);
 	osDelay(100);
 	if (err < 0) {
-		Debug_Message(LOG_ERROR, "FromServerGPRS Не смог передать строку %s", buffer);
+		DeviceLog(SUB_TRANSPORT, "FromServerGPRS Не смог передать строку %.20s", buffer);
 		BadGPRS(buffer, socket, GPRSFromServerQueue);
 		return;
 	}
@@ -74,12 +75,12 @@ void FromServerGPRSLoop(void) {
 		memset(buffer, 0, MAX_LEN_TCP_MESSAGE);
 		len = recv(socket, buffer, MAX_LEN_TCP_MESSAGE-1, 0);
 		if (len < 1) {
-			Debug_Message(LOG_ERROR, "FromServerGPRS Ошибка чтения ");
+			DeviceLog(SUB_TRANSPORT, "FromServerGPRS Ошибка чтения ");
 			BadGPRS(buffer, socket, GPRSFromServerQueue);
 			return;
 		}
 		if (buffer[len - 1] != '\n') {
-			Debug_Message(LOG_ERROR, "FromServerGPRS Неверное завершение строки %s",
+			DeviceLog(SUB_TRANSPORT, "FromServerGPRS Неверное завершение строки %.20s",
 					buffer);
 			BadGPRS(buffer, socket, GPRSFromServerQueue);
 			return;
@@ -94,13 +95,13 @@ void FromServerGPRSLoop(void) {
 		int count=toque;
 		while (osMessageQueueGet(GPRSToServerQueue, &msg, NULL, STEP_CONTROL) != osOK) {
 			if (--count<0 || !isGoodGPRS()|| isGoodTCP()){
-				Debug_Message(LOG_ERROR, "FromServerGPRS Таймаут или сброс");
+				DeviceLog(SUB_TRANSPORT, "FromServerGPRS Таймаут или сброс");
 				BadGPRS(buffer, socket, GPRSFromServerQueue);
 				return;
 			}
 		}
 		if (msg.error == TRANSPORT_STOP) {
-			Debug_Message(LOG_ERROR, "FromServerGPRS Приказали остановиться");
+			DeviceLog(SUB_TRANSPORT, "FromServerGPRS Приказали остановиться");
 			BadGPRS(buffer, socket, GPRSFromServerQueue);
 			return;
 		}
@@ -112,7 +113,7 @@ void FromServerGPRSLoop(void) {
 		err = send(socket, buffer, strlen(buffer), 0);
 		osDelay(100);
 		if (err < 0) {
-			Debug_Message(LOG_ERROR, "FromServerGPRS Не смог передать строку ответа %s", buffer);
+			DeviceLog(SUB_TRANSPORT, "FromServerGPRS Не смог передать строку ответа %.20s", buffer);
 			BadGPRS(buffer, socket, GPRSFromServerQueue);
 			return;
 		}

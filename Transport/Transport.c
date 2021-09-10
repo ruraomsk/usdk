@@ -64,7 +64,7 @@ void startGPRS() {
 	osMessageQueuePut(ToServerQueue, &msg, 0, 0);
 	osMessageQueuePut(ToServerSecQueue, &msg, 0, 0);
 	osMessageQueuePut(MainChangeStatus, &c, 0, 0);
-	Debug_Message(LOG_INFO, "Переключились с ETH на GPRS");
+	DeviceLog(SUB_TRANSPORT, "Переключились с ETH на GPRS");
 	setGPRSNeed(1);
 }
 void stopGPRS() {
@@ -74,7 +74,7 @@ void stopGPRS() {
 	osMessageQueuePut(GPRSToServerQueue, &msg, 0, 0);
 	osMessageQueuePut(GPRSToServerSecQueue, &msg, 0, 0);
 	osMessageQueuePut(MainChangeStatus, &c, 0, 0);
-	Debug_Message(LOG_INFO, "Переключились с GPRS на ETH");
+	DeviceLog(SUB_TRANSPORT, "Переключились с GPRS на ETH");
 	setGPRSNeed(0);
 
 }
@@ -82,16 +82,16 @@ void noETHandGPRS() {
 	MessageFromQueue msg;
 	int c = -1;
 	osMessageQueuePut(MainChangeStatus, &c, 0, 0);
-	Debug_Message(LOG_INFO, "Нет устройств связи");
+	DeviceLog(SUB_TRANSPORT, "Нет устройств связи");
 	for (;;) {
 		if (osMessageQueueGet(MainToServerQueue, &msg, NULL, tout) == osOK) {
-			Debug_Message(LOG_INFO, "Пришло сообщение на главный ");
+			DeviceLog(SUB_TRANSPORT, "Пришло сообщение на главный ");
 			MessageFromQueue ms;
 			ms.error = TRANSPORT_STOP;
 			osMessageQueuePut(MainFromServerQueue, &ms, 0, 0);
 		}
 		if (osMessageQueueGet(MainToServerSecQueue, &msg, NULL, tout) == osOK) {
-			Debug_Message(LOG_INFO, "Пришло сообщение на второй ");
+			DeviceLog(SUB_TRANSPORT, "Пришло сообщение на второй ");
 			MessageFromQueue ms;
 			ms.error = TRANSPORT_STOP;
 			osMessageQueuePut(MainFromServerSecQueue, &ms, 0, 0);

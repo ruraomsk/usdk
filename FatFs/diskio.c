@@ -208,13 +208,13 @@ DRESULT disk_ioctl (
 	case DEV_MMC :
 
 		// Process of the command for the MMC/SD card
-
+		return MMC_disk_ioctl(	pdrv,	cmd, buff);
 		return res;
 
 	case DEV_USB :
 
 		// Process of the command the USB drive
-
+		return USB_disk_ioctl(	pdrv,	cmd, buff);
 		return res;
 	}
 

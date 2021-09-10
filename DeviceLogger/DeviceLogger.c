@@ -8,53 +8,108 @@
 #include "DeviceLogger.h"
 #include "DeviceTime.h"
 #include "DebugLogger.h"
+#include "ff.h"
+#include "Files.h"
+
+#include <stdio.h>
 #include <string.h>
+#include <stdarg.h>
 
 static SubNames DevLogWork[]={
-		{SHARE_SUB,"Share","\0"},
-		{LOG_SUB,"Logger","\0"},
-		{END_SUB,"\0","\0"}
+		{SUB_TRANSPORT,"Транспорт",NULL},
+		{SUB_FILES,"Файл",NULL},
+		{SUB_END,"\0",NULL}
 	};
 static osMutexId_t LogDevMutex;
 static RingBuffer* devicelogs;
-char tempBuffer[MAX_LEN_MESSAGE];
+DeviceLoggerMessage msg,oldmsg;
 void DeviceLogInit(){
 	LogDevMutex=osMutexNew(NULL);
 	devicelogs=newRingBuffer(CAPACITY_MESSAGES, sizeof(DeviceLoggerMessage));
-	//Если буфер переполнился то удаляем самое старое сообщение
-	setOverWriteRingBuffer(devicelogs);
 	if(devicelogs==NULL){
 		Debug_Message(LOG_FATAL, "Невозможно создать лог устройства");
 		return;
+	}
+	//Если буфер переполнился то удаляем самое старое сообщение
+//	setOverWriteRingBuffer(devicelogs);
+	SubNames* result=DevLogWork;
+	while (result->subsystem!=SUB_END){
+		result->lastMessage=malloc(MAX_LEN_MESSAGE);
+		memset(result->lastMessage,0,MAX_LEN_MESSAGE);
+		result++;
 	}
 	Debug_Message(LOG_INFO, "Создан лог устройства");
 }
 SubNames* getSubsystem(char sub){
 	SubNames* result=DevLogWork;
-	while (result->subsystem!=END_SUB){
+	while (result->subsystem!=SUB_END){
 		if (result->subsystem ==sub) return result;
 		result++;
 	}
 	return NULL;
 }
-void DeviceLog(char subsytem,const char*message){
+FRESULT result;
+FIL file;
+void saveRingBufferToFile(){
+	LockFiles();
+	FATFS *fs;
+	DWORD free_clust,free_sect;
+	if (f_getfree("", &free_clust, &fs)){
+		Debug_Message(LOG_ERROR, "Ошибка чтения свободного места для  файла сохранения логов" );
+		while(RingBufferTryRead(devicelogs, (void *)&oldmsg)==RINGBUFFER_OK){
+		}
+		UnlockFiles();
+		return;
+	}
+	free_sect=free_clust*fs->csize;
+	if (free_sect<NEED_FOR_SAVING){
+		Debug_Message(LOG_INFO, "Нет свободного места для  файла сохранения логов удаляем его..." );
+		f_unlink("logdev");
+	}
+	if (f_open(&file,"logdev",FA_WRITE|FA_OPEN_ALWAYS)!=FR_OK){
+		Debug_Message(LOG_ERROR, "ошибка открытия файла сохранения логов" );
+		UnlockFiles();
+		return;
+	}
+	if (f_lseek(&file, f_size(&file))!=FR_OK){
+		Debug_Message(LOG_ERROR, "ошибка перемещения в конец файла сохранения логов" );
+		f_close(&file);
+		UnlockFiles();
+		return;
+	}
+	char* buf=malloc(MAX_LEN_MESSAGE);
+	while(RingBufferTryRead(devicelogs, (void *)&oldmsg)==RINGBUFFER_OK){
+		UINT bw;
+		sprintf(buf, "%s\t%s\t%s\n",TimeToString(oldmsg.time),
+				getSubsystem(oldmsg.subsystem)->name,oldmsg.message);
+		f_write(&file, buf, strlen(buf), &bw);
+	}
+	free(buf);
+	f_close(&file);
+	UnlockFiles();
+}
+void DeviceLog(char subsytem,char *fmt, ...){
 	if (osMutexAcquire(LogDevMutex, osWaitForever) == osOK) {
 		SubNames* subName=getSubsystem(subsytem);
 		if (subName!=NULL) {
-			strncpy(tempBuffer,message,MAX_LEN_MESSAGE);
-			tempBuffer[MAX_LEN_MESSAGE-1]=0;
+			va_list ap;
+			va_start(ap, fmt);
+			char *message=malloc(3*MAX_LEN_MESSAGE);
+			vsprintf(message, fmt, ap);
+			message[MAX_LEN_MESSAGE-1]=0;
 			//Если такое сообщение уже посылали то и нефиг его записывать
-			if (strcmp(subName->lastMessage,tempBuffer)!=0){
-				strcpy(subName->lastMessage,tempBuffer);
-				DeviceLoggerMessage msg;
+			if (strcmp(subName->lastMessage,message)!=0){
+				strcpy(subName->lastMessage,message);
 				msg.time=GetDeviceTime();
 				msg.subsystem=subsytem;
-				strcpy(msg.message,tempBuffer);
-				int res=RingBufferTryWrite(devicelogs, (void *)&msg);
-				if (res!=RINGBUFFER_OK){
-					Debug_Message(LOG_ERROR, "Невозможно записать в  лог устройства");
+				strcpy(msg.message,message);
+				while(RingBufferTryWrite(devicelogs, (void *)&msg)!=RINGBUFFER_OK){
+					Debug_Message(LOG_INFO, "Лог устройства полон");
+					saveRingBufferToFile();
+					Debug_Message(LOG_INFO, "Лог устройства сохранен в файл");
 				}
 			}
+			free(message);
 		} else {
 			Debug_Message(LOG_ERROR, "Неверный номер подсистемы");
 		}

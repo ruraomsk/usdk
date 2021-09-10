@@ -23,6 +23,8 @@
 #include "usbd_storage_if.h"
 
 /* USER CODE BEGIN INCLUDE */
+#include "ff.h"
+#include "diskio.h"
 #include "Files.h"
 /* USER CODE END INCLUDE */
 
@@ -69,6 +71,9 @@
 
 /* USER CODE BEGIN PRIVATE_DEFINES */
 
+//Тип устройсва внутренней FS
+#define PDRV 0
+
 /* USER CODE END PRIVATE_DEFINES */
 
 /**
@@ -106,14 +111,17 @@ const int8_t STORAGE_Inquirydata_FS[] = {/* 36 */
   0x00,
   0x00,
   0x00,
-  'S', 'T', 'M', ' ', ' ', ' ', ' ', ' ', /* Manufacturer : 8 bytes */
-  'P', 'r', 'o', 'd', 'u', 'c', 't', ' ', /* Product      : 16 Bytes */
-  ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ',
+  'A', 'S', 'D', 'U', ' ', ' ', ' ', ' ', /* Manufacturer : 8 bytes */
+  'C', 'o', 'n', 't', 'r', 'o', 'l', 'l', /* Product      : 16 Bytes */
+  'e', 'r', ' ', ' ', ' ', ' ', ' ', ' ',
   '0', '.', '0' ,'1'                      /* Version      : 4 Bytes */
 };
 /* USER CODE END INQUIRY_DATA_FS */
 
 /* USER CODE BEGIN PRIVATE_VARIABLES */
+  FATFS fs;
+  UINT bw;
+  FRESULT result;
 
 /* USER CODE END PRIVATE_VARIABLES */
 
@@ -193,9 +201,12 @@ int8_t STORAGE_Init_FS(uint8_t lun)
 int8_t STORAGE_GetCapacity_FS(uint8_t lun, uint32_t *block_num, uint16_t *block_size)
 {
   /* USER CODE BEGIN 3 */
-
-  *block_num  = STORAGE_BLK_NBR;
-  *block_size = STORAGE_BLK_SIZ;
+	LockFiles();
+	disk_ioctl(PDRV, GET_SECTOR_COUNT, block_num);
+	disk_ioctl(PDRV, GET_SECTOR_SIZE, block_size);
+	UnlockFiles();
+//  *block_num  = STORAGE_BLK_NBR;
+//  *block_size = STORAGE_BLK_SIZ;
   return (USBD_OK);
   /* USER CODE END 3 */
 }
@@ -232,6 +243,9 @@ int8_t STORAGE_IsWriteProtected_FS(uint8_t lun)
 int8_t STORAGE_Read_FS(uint8_t lun, uint8_t *buf, uint32_t blk_addr, uint16_t blk_len)
 {
   /* USER CODE BEGIN 6 */
+	LockFiles();
+	disk_read(PDRV, buf, blk_addr, blk_len);
+	UnlockFiles();
   return (USBD_OK);
   /* USER CODE END 6 */
 }
@@ -244,6 +258,16 @@ int8_t STORAGE_Read_FS(uint8_t lun, uint8_t *buf, uint32_t blk_addr, uint16_t bl
 int8_t STORAGE_Write_FS(uint8_t lun, uint8_t *buf, uint32_t blk_addr, uint16_t blk_len)
 {
   /* USER CODE BEGIN 7 */
+	LockFiles();
+	disk_write(PDRV, buf, blk_addr, blk_len);
+	result = f_mount(&fs, "", 0);
+	if (result) {
+		Debug_Message(LOG_ERROR, "Ошибка монтирования файловой системы %d",
+				result);
+		UnlockFiles();
+	  return (USBD_FAIL);
+	}
+	UnlockFiles();
   return (USBD_OK);
   /* USER CODE END 7 */
 }

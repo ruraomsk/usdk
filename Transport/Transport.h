@@ -24,7 +24,8 @@
 enum {
 	TRANSPORT_OK=0,
 	TRANSPORT_ERROR,
-	TRANSPORT_STOP
+	TRANSPORT_STOP,
+	TRANSPORT_KEEP_ALIVE
 };
 typedef struct {
 	int error;

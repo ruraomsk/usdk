@@ -7,6 +7,7 @@
 
 #include "lwip.h"
 #include "DebugLogger.h"
+#include "DeviceLogger.h"
 #include "Transport.h"
 #include "parson.h"
 #include "sockets.h"
@@ -20,7 +21,7 @@ void ToServerTCPLoop(void) {
 	int socket = -1;
 	DeviceStatus deviceStatus = readSetup("setup");
 	if (!deviceStatus.Ethertnet) {
-		Debug_Message(LOG_ERROR, "ToServerTCP Нет Ethernet");
+		DeviceLog(SUB_TRANSPORT, "ToServerTCP Нет Ethernet");
 		BadTCP(buffer,socket,FromServerSecQueue);
 		return;
 	}
@@ -36,7 +37,7 @@ void ToServerTCPLoop(void) {
 	srv_addr.sin_port = htons((int ) json_object_get_number(object, "port"));
 	socket = socket(AF_INET, SOCK_STREAM, 0);
 	if (socket < 0) {
-		Debug_Message(LOG_ERROR, "ToServerTCP Не могу создать сокет %d", errno);
+		DeviceLog(SUB_TRANSPORT, "ToServerTCP Не могу создать сокет %d", errno);
 		BadTCP(buffer,socket,FromServerSecQueue);
 		return;
 	}
@@ -51,7 +52,7 @@ void ToServerTCPLoop(void) {
 	err = connect(socket, (struct sockaddr* ) &srv_addr,
 			sizeof(struct sockaddr_in));
 	if (err != 0) {
-		Debug_Message(LOG_ERROR,
+		DeviceLog(SUB_TRANSPORT,
 				"ToServerTCP Нет соединения с сервером по резервному каналу");
 		BadTCP(buffer,socket,FromServerSecQueue);
 		return;
@@ -64,7 +65,7 @@ void ToServerTCPLoop(void) {
 	err = send(socket, buffer, strlen(buffer), 0);
 	osDelay(10);
 	if (err < 0) {
-		Debug_Message(LOG_ERROR, "ToServerTCP Не смог передать строку %s", buffer);
+		DeviceLog(SUB_TRANSPORT, "ToServerTCP Не смог передать строку %.20s", buffer);
 		BadTCP(buffer,socket,FromServerSecQueue);
 		return;
 	}
@@ -73,7 +74,7 @@ void ToServerTCPLoop(void) {
 		int count=toque;
 		while (osMessageQueueGet(ToServerSecQueue, &msg, NULL, toque) != osOK) {
 			if(--count<0 || !isGoodTCP()){
-				Debug_Message(LOG_ERROR, "ToServerTCP нет сообщения или сброс ");
+				DeviceLog(SUB_TRANSPORT, "ToServerTCP нет сообщения или сброс ");
 				BadTCP(buffer,socket,FromServerSecQueue);
 				return;
 			}
@@ -86,7 +87,7 @@ void ToServerTCPLoop(void) {
 		err = send(socket, buffer, strlen(buffer), 0);
 		osDelay(10);
 		if (err < 0) {
-			Debug_Message(LOG_ERROR, "ToServerTCP Не смог передать строку %s", buffer);
+			DeviceLog(SUB_TRANSPORT, "ToServerTCP Не смог передать строку %.20s", buffer);
 			BadTCP(buffer,socket,FromServerSecQueue);
 			return;
 		}
@@ -95,12 +96,12 @@ void ToServerTCPLoop(void) {
 		memset(buffer,0,MAX_LEN_TCP_MESSAGE);
 		len = recv(socket, buffer, MAX_LEN_TCP_MESSAGE-1, 0);
 		if (len < 1) {
-			Debug_Message(LOG_ERROR, "ToServerTCP Ошибка чтения ");
+			DeviceLog(SUB_TRANSPORT, "ToServerTCP Ошибка чтения ");
 			BadTCP(buffer,socket,FromServerSecQueue);
 			return;
 		}
 		if (buffer[len - 1] != '\n'){
-			Debug_Message(LOG_ERROR, "ToServerTCP Неверное завершение строки %s",buffer);
+			DeviceLog(SUB_TRANSPORT, "ToServerTCP Неверное завершение строки %.20s",buffer);
 			BadTCP(buffer,socket,FromServerSecQueue);
 			return;
 		}

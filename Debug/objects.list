@@ -149,6 +149,7 @@
 "./MobusTCP/ServerModbusTCP.o"
 "./Transport/FromServerGprs.o"
 "./Transport/FromServerTCP.o"
+"./Transport/TechExch.o"
 "./Transport/ToServerGprs.o"
 "./Transport/ToServerTCP.o"
 "./Transport/Transport.o"

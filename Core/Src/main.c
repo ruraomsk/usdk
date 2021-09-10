@@ -425,10 +425,10 @@ void StartTCPTransport(void *argument)
 		osDelay(100);
 	}
 	while(1){
-		Debug_Message(LOG_INFO, "Запускаем Transport");
+		DeviceLog(SUB_TRANSPORT, "Запускаем Transport");
 		mainTransportLoop();
 		osDelay(1000);
-		Debug_Message(LOG_ERROR, "Вышли из Transport");
+		DeviceLog(SUB_TRANSPORT, "Вышли из Transport");
 	}
   /* USER CODE END StartTCPTransport */
 }
