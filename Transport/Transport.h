@@ -12,8 +12,8 @@
 #include <stddef.h>
 
 
-#define true 1
-#define false 0
+//#define true 1
+//#define false 0
 
 #define STEP_TCP 				3000
 #define STEP_GPRS 				3000

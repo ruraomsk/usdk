@@ -13,7 +13,7 @@
 //static int fdmax;
 void ServerModbusTCPLoop() {
 	modbus_t *ctx = modbus_new_tcp("0.0.0.0", 502);
-	uint8_t *query = (uint8_t*) malloc(MODBUS_TCP_MAX_ADU_LENGTH);
+	uint8_t *query = (uint8_t*) pvPortMalloc(MODBUS_TCP_MAX_ADU_LENGTH);
 
 	modbus_set_debug(ctx, TRUE);
 
@@ -44,6 +44,6 @@ void ServerModbusTCPLoop() {
 	}
 	close(listen_socket);
 	modbus_mapping_free(mb_mapping);
-	free(query);
+	vPortFree(query);
 	modbus_free(ctx);
 }

@@ -21,7 +21,7 @@ void initCamera() {
 
 }
 void badCamera() {
-	free(buffer);
+	vPortFree(buffer);
 	if (socket < 0)
 		return;
 	shutdown(socket, SHUT_RDWR);
@@ -50,7 +50,7 @@ int sendAndRecv(){
 }
 void cameraMainLoop() {
 	struct sockaddr_in srv_addr;
-	JSON_Value *root = ShareGetJson("camera");
+	JSON_Value *root = FilesGetJson("camera");
 	JSON_Object *object = json_value_get_object(root);
 	inet_aton(json_object_get_string(object, "ip"), &srv_addr.sin_addr.s_addr);
 	srv_addr.sin_family = AF_INET;
@@ -76,7 +76,7 @@ void cameraMainLoop() {
 		badCamera();
 		return;
 	}
-	buffer = malloc(MAX_LEN_TCP_MESSAGE);
+	buffer = pvPortMalloc(MAX_LEN_TCP_MESSAGE);
 	sprintf(buffer, "%s\r\n%s\r\n", json_object_get_string(object, "login"),
 			json_object_get_string(object, "password"));
 	if (sendAndRecv() < 0 ) {

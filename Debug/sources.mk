@@ -21,6 +21,7 @@ OBJCOPY_BIN :=
 # Every subdirectory with source files must be described here
 SUBDIRS := \
 Cameras \
+CommonData \
 Core/Src \
 Core/Startup \
 DebugLogger \
@@ -50,6 +51,7 @@ MobusTCP \
 Transport \
 USB_DEVICE/App \
 USB_DEVICE/Target \
+core_JSON \
 libmodbus \
 parson \
 

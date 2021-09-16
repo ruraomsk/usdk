@@ -151,30 +151,30 @@ void StartFromServerGPRS(void *argument) {
 
 void mainTransportLoop(void) {
 	TransportMutex = osMutexNew(NULL);
-	ToServerQueue = osMessageQueueNew(16, sizeof(MessageFromQueue), NULL);
-	FromServerQueue = osMessageQueueNew(16, sizeof(MessageFromQueue), NULL);
-	ToServerSecQueue = osMessageQueueNew(16, sizeof(MessageFromQueue), NULL);
-	FromServerSecQueue = osMessageQueueNew(16, sizeof(MessageFromQueue), NULL);
+	ToServerQueue = osMessageQueueNew(6, sizeof(MessageFromQueue), NULL);
+	FromServerQueue = osMessageQueueNew(6, sizeof(MessageFromQueue), NULL);
+	ToServerSecQueue = osMessageQueueNew(6, sizeof(MessageFromQueue), NULL);
+	FromServerSecQueue = osMessageQueueNew(6, sizeof(MessageFromQueue), NULL);
 
-	GPRSToServerQueue = osMessageQueueNew(16, sizeof(MessageFromQueue), NULL);
-	GPRSFromServerQueue = osMessageQueueNew(16, sizeof(MessageFromQueue), NULL);
-	GPRSToServerSecQueue = osMessageQueueNew(16, sizeof(MessageFromQueue),
+	GPRSToServerQueue = osMessageQueueNew(6, sizeof(MessageFromQueue), NULL);
+	GPRSFromServerQueue = osMessageQueueNew(6, sizeof(MessageFromQueue), NULL);
+	GPRSToServerSecQueue = osMessageQueueNew(6, sizeof(MessageFromQueue),
 			NULL);
-	GPRSFromServerSecQueue = osMessageQueueNew(16, sizeof(MessageFromQueue),
+	GPRSFromServerSecQueue = osMessageQueueNew(6, sizeof(MessageFromQueue),
 			NULL);
 
-	MainToServerQueue = osMessageQueueNew(16, sizeof(MessageFromQueue), NULL);
-	MainFromServerQueue = osMessageQueueNew(16, sizeof(MessageFromQueue), NULL);
-	MainToServerSecQueue = osMessageQueueNew(16, sizeof(MessageFromQueue),
+	MainToServerQueue = osMessageQueueNew(6, sizeof(MessageFromQueue), NULL);
+	MainFromServerQueue = osMessageQueueNew(6, sizeof(MessageFromQueue), NULL);
+	MainToServerSecQueue = osMessageQueueNew(6, sizeof(MessageFromQueue),
 			NULL);
-	MainFromServerSecQueue = osMessageQueueNew(16, sizeof(MessageFromQueue),
+	MainFromServerSecQueue = osMessageQueueNew(6, sizeof(MessageFromQueue),
 			NULL);
 
 	//0 - Переход от GPRS на Ethernet
 	//1 - Переход от Ethernet на GPRS
 	//-1 - Нет связи с внешним миром
 
-	MainChangeStatus = osMessageQueueNew(16, sizeof(int), NULL);
+	MainChangeStatus = osMessageQueueNew(6, sizeof(int), NULL);
 
 	/* creation of FromServerGPRS */
 	FromServerGPRSHandle = osThreadNew(StartFromServerGPRS, NULL,
@@ -194,6 +194,10 @@ void mainTransportLoop(void) {
 
 
 	DeviceStatus deviceStatus = readSetup("setup");
+	if(deviceStatus.ID<0) {
+		Debug_Message(LOG_FATAL, "Transport нет настроек устройства");
+		return;
+	}
 	if (!deviceStatus.Ethertnet && !deviceStatus.Gprs) {
 		noETHandGPRS();
 	}

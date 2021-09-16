@@ -6,9 +6,10 @@
  */
 #include "diskio.h"
 #include <string.h>
-static void *RAM_BUFFER = NULL;
 #define RAM_SIZE_SECTOR 512
-#define RAM_COUNT_SECTORS 700
+#define RAM_COUNT_SECTORS 300
+char internalbuffer[RAM_SIZE_SECTOR*RAM_COUNT_SECTORS];
+static void *RAM_BUFFER = &internalbuffer;
 
 int RAM_VALID(LBA_t sector, UINT count) {
 	if (count < 1)
@@ -31,9 +32,9 @@ int USB_disk_status() {
 int RAM_disk_initialize() {
 	if (RAM_BUFFER != NULL)
 		return RES_OK;
-	RAM_BUFFER = malloc(RAM_SIZE_SECTOR * RAM_COUNT_SECTORS);
-	if (RAM_BUFFER != NULL)
-		return RES_OK;
+//	RAM_BUFFER = malloc(RAM_SIZE_SECTOR * RAM_COUNT_SECTORS);
+//	if (RAM_BUFFER != NULL)
+//		return RES_OK;
 	return RES_ERROR;
 }
 int MMC_disk_initialize() {

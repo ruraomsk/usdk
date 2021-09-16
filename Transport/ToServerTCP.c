@@ -20,6 +20,11 @@ void ToServerTCPLoop(void) {
 	char *buffer = NULL;
 	int socket = -1;
 	DeviceStatus deviceStatus = readSetup("setup");
+	if (deviceStatus.ID<0) {
+		BadTCP(buffer,socket,FromServerSecQueue);
+		Debug_Message(LOG_FATAL, "TCP Нет настроек setup");
+		return;
+	}
 	if (!deviceStatus.Ethertnet) {
 		DeviceLog(SUB_TRANSPORT, "ToServerTCP Нет Ethernet");
 		BadTCP(buffer,socket,FromServerSecQueue);
@@ -27,9 +32,11 @@ void ToServerTCPLoop(void) {
 	}
 	int err;
 	struct sockaddr_in srv_addr;
-	JSON_Value *root = ShareGetJson("csec");
+	JSON_Value *root = FilesGetJson("csec");
 	if (root==NULL){
-		printf("ERROR");
+		BadTCP(buffer,socket,FromServerSecQueue);
+		Debug_Message(LOG_FATAL, "TCP Нет настроек");
+		return;
 	}
 	JSON_Object *object = json_value_get_object(root);
 	inet_aton(json_object_get_string(object, "ip"), &srv_addr.sin_addr.s_addr);
@@ -39,6 +46,7 @@ void ToServerTCPLoop(void) {
 	if (socket < 0) {
 		DeviceLog(SUB_TRANSPORT, "ToServerTCP Не могу создать сокет %d", errno);
 		BadTCP(buffer,socket,FromServerSecQueue);
+		json_value_free(root);
 		return;
 	}
 	//Устанавливаем тайм ауты
@@ -49,6 +57,8 @@ void ToServerTCPLoop(void) {
 	err = lwip_setsockopt(socket, SOL_SOCKET, SO_SNDTIMEO, &tv, sizeof(tv));
 	uint32_t toque=(uint32_t) json_object_get_number(object, "timeoutque")*1000U;
 
+	json_value_free(root);
+
 	err = connect(socket, (struct sockaddr* ) &srv_addr,
 			sizeof(struct sockaddr_in));
 	if (err != 0) {
@@ -57,7 +67,12 @@ void ToServerTCPLoop(void) {
 		BadTCP(buffer,socket,FromServerSecQueue);
 		return;
 	}
-	buffer = malloc(MAX_LEN_TCP_MESSAGE);
+	buffer = pvPortMalloc(MAX_LEN_TCP_MESSAGE);
+	if(buffer==NULL){
+		DeviceLog(SUB_TRANSPORT, "ToServerTCP Нет памяти");
+		BadTCP(buffer,socket,FromServerSecQueue);
+		return;
+	}
 	makeConnectString(buffer, MAX_LEN_TCP_MESSAGE, "ETH", &deviceStatus);
 	int len = strlen(buffer);
 	buffer[len] = '\n';
@@ -69,6 +84,7 @@ void ToServerTCPLoop(void) {
 		BadTCP(buffer,socket,FromServerSecQueue);
 		return;
 	}
+	vPortFree(buffer);
 	for (;;) {
 		MessageFromQueue msg;
 		int count=toque;
@@ -79,9 +95,14 @@ void ToServerTCPLoop(void) {
 				return;
 			}
 		}
-		free(buffer);
+		vPortFree(buffer);
 		int len = strlen(msg.message);
-		buffer = malloc(len + 2);
+		buffer = pvPortMalloc(len + 2);
+		if(buffer==NULL){
+			DeviceLog(SUB_TRANSPORT, "ToServerTCP Нет памяти");
+			BadTCP(buffer,socket,FromServerSecQueue);
+			return;
+		}
 		buffer[len] = '\n';
 		buffer[len + 1] = 0;
 		err = send(socket, buffer, strlen(buffer), 0);
@@ -91,8 +112,13 @@ void ToServerTCPLoop(void) {
 			BadTCP(buffer,socket,FromServerSecQueue);
 			return;
 		}
-		free(buffer);
-		buffer = malloc(MAX_LEN_TCP_MESSAGE);
+		vPortFree(buffer);
+		buffer = pvPortMalloc(MAX_LEN_TCP_MESSAGE);
+		if(buffer==NULL){
+			DeviceLog(SUB_TRANSPORT, "ToServerTCP Нет памяти");
+			BadTCP(buffer,socket,FromServerSecQueue);
+			return;
+		}
 		memset(buffer,0,MAX_LEN_TCP_MESSAGE);
 		len = recv(socket, buffer, MAX_LEN_TCP_MESSAGE-1, 0);
 		if (len < 1) {

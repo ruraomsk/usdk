@@ -14,6 +14,7 @@ extern "C" {
 typedef struct {
 	int Level;
 	dev_time time;
+	size_t size;
 	char Buffer[128];
 } DebugLoggerMsg;
 void Debug_Init(void);
@@ -22,8 +23,6 @@ char *Debuger_Status(int level);
 
 void DebugLoggerLoop(void);
 
-void DebugReadSetup(void);
-void DebugWriteSetup(void);
 
 #define LOG_FATAL 0
 #define LOG_ERROR 1

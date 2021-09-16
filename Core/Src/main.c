@@ -37,6 +37,7 @@
 #include "Transport.h"
 #include "modbus.h"
 #include "Camera.h"
+#include "CommonData.h"
 
 
 /* USER CODE END Includes */
@@ -69,14 +70,14 @@ UART_HandleTypeDef huart4;
 osThreadId_t MainTaskHandle;
 const osThreadAttr_t MainTask_attributes = {
   .name = "MainTask",
-  .stack_size = 1024 * 4,
-  .priority = (osPriority_t) osPriorityNormal,
+  .stack_size = 2048 * 4,
+  .priority = (osPriority_t) osPriorityRealtime,
 };
 /* Definitions for TCPTransport */
 osThreadId_t TCPTransportHandle;
 const osThreadAttr_t TCPTransport_attributes = {
   .name = "TCPTransport",
-  .stack_size = 1024 * 4,
+  .stack_size = 2048 * 4,
   .priority = (osPriority_t) osPriorityRealtime,
 };
 /* USER CODE BEGIN PV */
@@ -140,11 +141,6 @@ int main(void)
   MX_GPIO_Init();
   MX_UART4_Init();
   /* USER CODE BEGIN 2 */
-  //USB Device
-//  HAL_PWREx_EnableUSBVoltageDetector();
-//  USBD_Init(&USBD_Device, &MSC_Desc, 0);
-//  USBD_RegisterClass(&USBD_Device, &USBD_DISK_fops);
-//  USBD_Start(&USBD_Device);
 
   /* USER CODE END 2 */
 
@@ -400,12 +396,14 @@ void StartMainTask(void *argument)
   MX_USB_DEVICE_Init();
   /* USER CODE BEGIN 5 */
   ReadyETH=1;
-  FilesInit();
   Debug_Init();
+  FilesInit();
   Debug_Message(LOG_INFO, "Запущена основная задача и логгер");
   DeviceLogInit();
+  initCommonData();
   for (;;) {
 	  DebugLoggerLoop();
+	  osDelay(1000);
   }
   /* USER CODE END 5 */
 }

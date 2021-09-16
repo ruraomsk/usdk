@@ -19,8 +19,8 @@ int FilesInit(void);
 
 
 void ShareSaveChange(void);
-JSON_Value* ShareGetJson(char *chart);
-void ShareSetJson(char *chart, JSON_Value *value);
+JSON_Value* FilesGetJson(char *chart);
+void FilesSetJson(char *chart, JSON_Value *value);
 void LockFiles(void);
 void UnlockFiles(void);
 

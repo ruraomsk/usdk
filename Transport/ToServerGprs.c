@@ -25,6 +25,11 @@ void ToServerGPRSLoop(void) {
 	char *buffer = NULL;
 	if (isGoodTCP()) return;
 	DeviceStatus deviceStatus = readSetup("setup");
+	if (deviceStatus.ID<0) {
+		Debug_Message(LOG_FATAL, "GPRS Нет настроек setup");
+		BadGPRS(buffer,socket,GPRSFromServerSecQueue);
+		return;
+	}
 	if (!deviceStatus.Gprs) {
 		DeviceLog(SUB_TRANSPORT, "ToServer Нет GPRS");
 		BadGPRS(buffer,socket,GPRSFromServerSecQueue);
@@ -32,9 +37,11 @@ void ToServerGPRSLoop(void) {
 	}
 	int err;
 	struct sockaddr_in srv_addr;
-	JSON_Value *root = ShareGetJson("csec");
+	JSON_Value *root = FilesGetJson("csec");
 	if (root==NULL){
-		printf("ERROR");
+		Debug_Message(LOG_FATAL, "GPRS Нет настроек");
+		BadGPRS(buffer,socket,GPRSFromServerSecQueue);
+		return;
 	}
 	JSON_Object *object = json_value_get_object(root);
 	inet_aton(json_object_get_string(object, "ip"), &srv_addr.sin_addr.s_addr);
@@ -44,6 +51,7 @@ void ToServerGPRSLoop(void) {
 	if (socket < 0) {
 		DeviceLog(SUB_TRANSPORT, "ToServerGPRS Не могу создать сокет %d", errno);
 		BadGPRS(buffer,socket,GPRSFromServerSecQueue);
+		json_value_free(root);
 		return;
 	}
 	//Устанавливаем тайм ауты
@@ -53,6 +61,7 @@ void ToServerGPRSLoop(void) {
 	tv.tv_sec = (int ) json_object_get_number(object, "timeoutwrite");
 	err = lwip_setsockopt(socket, SOL_SOCKET, SO_SNDTIMEO, &tv, sizeof(tv));
 	uint32_t toque=(uint32_t) json_object_get_number(object, "timeoutque")*1000U;
+	json_value_free(root);
 	toque=toque/STEP_CONTROL;
 
 	err = connect(socket, (struct sockaddr* ) &srv_addr,
@@ -63,7 +72,12 @@ void ToServerGPRSLoop(void) {
 		BadGPRS(buffer,socket,GPRSFromServerSecQueue);
 		return;
 	}
-	buffer = malloc(MAX_LEN_TCP_MESSAGE);
+	buffer = pvPortMalloc(MAX_LEN_TCP_MESSAGE);
+	if(buffer==NULL){
+		DeviceLog(SUB_TRANSPORT, "ToServerGPRS Нет памяти");
+		BadGPRS(buffer,socket,GPRSFromServerSecQueue);
+		return;
+	}
 	makeConnectString(buffer, MAX_LEN_TCP_MESSAGE, "GPRS", &deviceStatus);
 	int len = strlen(buffer);
 	buffer[len] = '\n';
@@ -75,6 +89,7 @@ void ToServerGPRSLoop(void) {
 		BadGPRS(buffer,socket,GPRSFromServerSecQueue);
 		return;
 	}
+	vPortFree(buffer);
 	for (;;) {
 		MessageFromQueue msg;
 		int count=toque;
@@ -89,9 +104,13 @@ void ToServerGPRSLoop(void) {
 			BadGPRS(buffer,socket,GPRSFromServerSecQueue);
 			return;
 		}
-		free(buffer);
 		int len = strlen(msg.message);
-		buffer = malloc(len + 2);
+		buffer = pvPortMalloc(len + 2);
+		if(buffer==NULL){
+			DeviceLog(SUB_TRANSPORT, "ToServerGPRS Нет памяти");
+			BadGPRS(buffer,socket,GPRSFromServerSecQueue);
+			return;
+		}
 		buffer[len] = '\n';
 		buffer[len + 1] = 0;
 		err = send(socket, buffer, strlen(buffer), 0);
@@ -101,8 +120,13 @@ void ToServerGPRSLoop(void) {
 			BadGPRS(buffer,socket,GPRSFromServerSecQueue);
 			return;
 		}
-		free(buffer);
-		buffer = malloc(MAX_LEN_TCP_MESSAGE);
+		vPortFree(buffer);
+		buffer = pvPortMalloc(MAX_LEN_TCP_MESSAGE);
+		if(buffer==NULL){
+			DeviceLog(SUB_TRANSPORT, "ToServerGPRS Нет памяти");
+			BadGPRS(buffer,socket,GPRSFromServerSecQueue);
+			return;
+		}
 		memset(buffer,0,MAX_LEN_TCP_MESSAGE);
 		len = recv(socket, buffer, MAX_LEN_TCP_MESSAGE-1, 0);
 		if (len < 1) {
@@ -119,5 +143,6 @@ void ToServerGPRSLoop(void) {
 		msg.message = buffer;
 		msg.error = TRANSPORT_OK;
 		osMessageQueuePut(GPRSFromServerSecQueue, &msg, 0, 0);
+
 	}
 }

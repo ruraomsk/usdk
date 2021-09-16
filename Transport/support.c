@@ -20,10 +20,10 @@ extern int FromServerGPRSStart;
 
 extern osMutexId_t TransportMutex;
 DeviceStatus readSetup(char *name) {
-	DeviceStatus d;
-	JSON_Value *root = ShareGetJson(name);
+	DeviceStatus d={.ID=-1};
+	JSON_Value *root = FilesGetJson(name);
 	if (root==NULL){
-		printf("ERROR");
+		return d;
 	}
 	JSON_Object *object = json_value_get_object(root);
 	d.ID = (int) json_object_get_number(object, "id");
@@ -31,6 +31,7 @@ DeviceStatus readSetup(char *name) {
 	d.Gprs = (char) json_object_get_boolean(object, "gprs");
 	d.Gps = (char) json_object_get_boolean(object, "gps");
 	d.Usb = (char) json_object_get_boolean(object, "usb");
+	json_value_free(root);
 	return d;
 }
 
@@ -42,7 +43,8 @@ void writeSetup(char *name,const DeviceStatus* deviceStatus) {
 	json_object_set_boolean(root_object, "gprs", deviceStatus->Gprs);
 	json_object_set_boolean(root_object, "gps", deviceStatus->Gps);
 	json_object_set_boolean(root_object, "usb", deviceStatus->Gps);
-	ShareSetJson(name, root_value);
+	FilesSetJson(name, root_value);
+	json_value_free(root_value);
 }
 void makeConnectString(char *buffer,const size_t buffersize,const char *typestring,const DeviceStatus* deviceStatus){
 	JSON_Value *root_value = json_value_init_object();
@@ -50,6 +52,7 @@ void makeConnectString(char *buffer,const size_t buffersize,const char *typestri
 	json_object_set_number (root_object, "id", deviceStatus->ID);
 	json_object_set_string(root_object, "type", typestring);
 	json_serialize_to_buffer(root_value, buffer, buffersize);
+	json_value_free(root_value);
 }
 void setFromServerTCPStart(int v){
 	if (osMutexAcquire(TransportMutex, osWaitForever)==osOK){
@@ -89,7 +92,7 @@ int isGoodGPRS(){
 }
 void BadTCP(char *buffer,int socket,osMessageQueueId_t que) {
 	setGoodTCP(0);
-	free(buffer);
+	vPortFree(buffer);
 	MessageFromQueue msg;
 	msg.error = TRANSPORT_ERROR;
 	msg.message = NULL;
@@ -97,11 +100,10 @@ void BadTCP(char *buffer,int socket,osMessageQueueId_t que) {
 	if(socket<0) return;
 	shutdown(socket, SHUT_RDWR);
 	close(socket);
-	osDelay(1000);
 }
 void BadGPRS(char *buffer,int socket,osMessageQueueId_t que) {
 	setGoodGPRS(0);
-	free(buffer);
+	vPortFree(buffer);
 	MessageFromQueue msg;
 	msg.error = TRANSPORT_ERROR;
 	msg.message = NULL;
@@ -109,5 +111,4 @@ void BadGPRS(char *buffer,int socket,osMessageQueueId_t que) {
 	if(socket<0) return;
 	shutdown(socket, SHUT_RDWR);
 	close(socket);
-	osDelay(1000);
 }

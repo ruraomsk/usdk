@@ -11,6 +11,7 @@ RM := rm -rf
 -include sources.mk
 -include parson/subdir.mk
 -include libmodbus/subdir.mk
+-include core_JSON/subdir.mk
 -include USB_DEVICE/Target/subdir.mk
 -include USB_DEVICE/App/subdir.mk
 -include Transport/subdir.mk
@@ -40,6 +41,7 @@ RM := rm -rf
 -include DebugLogger/subdir.mk
 -include Core/Startup/subdir.mk
 -include Core/Src/subdir.mk
+-include CommonData/subdir.mk
 -include Cameras/subdir.mk
 -include subdir.mk
 -include objects.mk
@@ -91,7 +93,7 @@ main-build: STM32H743_Nucleo_ETH.elf secondary-outputs
 
 # Tool invocations
 STM32H743_Nucleo_ETH.elf: $(OBJS) $(USER_OBJS) /home/rura/STM32CubeIDE/workspace_1.7.0/STM32H743_Nucleo_ETH/STM32H743ZITX_FLASH.ld makefile objects.list $(OPTIONAL_TOOL_DEPS)
-	arm-none-eabi-gcc -o "STM32H743_Nucleo_ETH.elf" @"objects.list" $(USER_OBJS) $(LIBS) -mcpu=cortex-m7 -T"/home/rura/STM32CubeIDE/workspace_1.7.0/STM32H743_Nucleo_ETH/STM32H743ZITX_FLASH.ld" --specs=nosys.specs -Wl,-Map="STM32H743_Nucleo_ETH.map" -Wl,--gc-sections -static --specs=nano.specs -mfpu=fpv5-d16 -mfloat-abi=hard -mthumb -Wl,--start-group -lc -lm -Wl,--end-group
+	arm-none-eabi-gcc -o "STM32H743_Nucleo_ETH.elf" @"objects.list" $(USER_OBJS) $(LIBS) -mcpu=cortex-m7 -T"/home/rura/STM32CubeIDE/workspace_1.7.0/STM32H743_Nucleo_ETH/STM32H743ZITX_FLASH.ld" --specs=nosys.specs -Wl,-Map="STM32H743_Nucleo_ETH.map" -Wl,--gc-sections -static --specs=nano.specs -mfpu=fpv5-d16 -mfloat-abi=hard -mthumb -u _printf_float -u _scanf_float -Wl,--start-group -lc -lm -Wl,--end-group
 	@echo 'Finished building target: $@'
 	@echo ' '
 
