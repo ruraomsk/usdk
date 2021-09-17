@@ -20,9 +20,9 @@ void clearSetupDK(SetupDK *setupDK) {
 	setupDK->preset = false;
 }
 
-char* SetupDKToJsonString(SetupDK *setupDK){
+char* SetupDKToJsonString(SetupDK *setupDK,size_t size){
 	js_write jswork;
-	js_write_start(&jswork, 256);
+	js_write_start(&jswork, size);
 	js_write_int(&jswork, "dkn", setupDK->dkn);
 	js_write_int(&jswork, "tmaxf", setupDK->tmaxf);
 	js_write_int(&jswork, "tminf", setupDK->tminf);
@@ -36,8 +36,6 @@ char* SetupDKToJsonString(SetupDK *setupDK){
 }
 void SetupDKFromJsonString(char *root, SetupDK *setupDK) {
 	js_read jswork;
-	char str[60];
-	double d;
 	js_read_start(&jswork, root);
 	js_read_int(&jswork, "dkn", &setupDK->dkn);
 	js_read_int(&jswork, "tmaxf", &setupDK->tmaxf);

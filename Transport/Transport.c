@@ -10,6 +10,7 @@
 #include "DeviceLogger.h"
 #include "DebugLogger.h"
 #include "Transport.h"
+#include "CommonData.h"
 //DeviceStatus deviceStatus;
 
 int GPRSNeed = 0;			//Готовность работы GPRS если есть
@@ -103,19 +104,19 @@ void StartToServerTCP(void *argument) {
 		while (FromServerTCPStart == 0) {
 			osDelay(10);
 		}
-//		Debug_Message(LOG_INFO, "Запускаем ToServerTCP");
+		Debug_Message(LOG_INFO, "Запускаем ToServerTCP");
 		ToServerTCPLoop();
-//		Debug_Message(LOG_INFO, "остановился ToServerTCP");
+		Debug_Message(LOG_INFO, "остановился ToServerTCP");
 		osDelay(STEP_TCP);
 
 	}
 }
 void StartFromServerTCP(void *argument) {
 	while (1) {
-//		Debug_Message(LOG_INFO, "Запускаем FromServerTCP");
+		Debug_Message(LOG_INFO, "Запускаем FromServerTCP");
 		FromServerTCPLoop();
 		setFromServerTCPStart(0);
-//		Debug_Message(LOG_INFO, "остановился FromServerTCP");
+		Debug_Message(LOG_INFO, "остановился FromServerTCP");
 		osDelay(STEP_TCP);
 
 	}
@@ -125,9 +126,9 @@ void StartToServerGPRS(void *argument) {
 		while (GPRSNeed == 0 || FromServerGPRSStart == 0) {
 			osDelay(10);
 		}
-//		Debug_Message(LOG_INFO, "Запускаем ToServerGPRS");
+		Debug_Message(LOG_INFO, "Запускаем ToServerGPRS");
 		ToServerGPRSLoop();
-//		Debug_Message(LOG_INFO, "остановился ToServerGPRS");
+		Debug_Message(LOG_INFO, "остановился ToServerGPRS");
 		osDelay(STEP_GPRS);
 
 	}
@@ -140,9 +141,9 @@ void StartFromServerGPRS(void *argument) {
 
 			osDelay(100);
 		}
-//		Debug_Message(LOG_INFO, "Запускаем FromServerGPRS");
+		Debug_Message(LOG_INFO, "Запускаем FromServerGPRS");
 		FromServerGPRSLoop();
-//		Debug_Message(LOG_INFO, "остановился FromServerGPRS");
+		Debug_Message(LOG_INFO, "остановился FromServerGPRS");
 		setFromServerGPRSStart(0);
 		osDelay(STEP_GPRS);
 
@@ -175,30 +176,28 @@ void mainTransportLoop(void) {
 	//-1 - Нет связи с внешним миром
 
 	MainChangeStatus = osMessageQueueNew(6, sizeof(int), NULL);
+	DeviceStatus devStatus;
+	GetCopy("setup", &devStatus);
+	if (devStatus.Ethertnet){
+		/* creation of FromServerTCP */
+		FromServerTCPHandle = osThreadNew(StartFromServerTCP, NULL,
+				&FromServerTCP_attributes);
 
-	/* creation of FromServerGPRS */
-	FromServerGPRSHandle = osThreadNew(StartFromServerGPRS, NULL,
-			&FromServerGPRS_attributes);
-	/* creation of FromServerTCP */
-	FromServerTCPHandle = osThreadNew(StartFromServerTCP, NULL,
-			&FromServerTCP_attributes);
-
-	/* creation of ToServerTCP */
-	ToServerTCPHandle = osThreadNew(StartToServerTCP, NULL,
-			&ToServerTCP_attributes);
-
-
-	/* creation of ToServerGPRS */
-	ToServerGPRSHandle = osThreadNew(StartToServerGPRS, NULL,
-			&ToServerGPRS_attributes);
-
-
-	DeviceStatus deviceStatus = readSetup("setup");
-	if(deviceStatus.ID<0) {
-		Debug_Message(LOG_FATAL, "Transport нет настроек устройства");
-		return;
+		/* creation of ToServerTCP */
+		ToServerTCPHandle = osThreadNew(StartToServerTCP, NULL,
+				&ToServerTCP_attributes);
 	}
-	if (!deviceStatus.Ethertnet && !deviceStatus.Gprs) {
+	if (devStatus.Gprs){
+		/* creation of FromServerGPRS */
+		FromServerGPRSHandle = osThreadNew(StartFromServerGPRS, NULL,
+				&FromServerGPRS_attributes);
+
+		/* creation of ToServerGPRS */
+		ToServerGPRSHandle = osThreadNew(StartToServerGPRS, NULL,
+				&ToServerGPRS_attributes);
+	}
+
+	if (!devStatus.Ethertnet && !devStatus.Gprs) {
 		noETHandGPRS();
 	}
 

@@ -6,6 +6,7 @@
  */
 
 #include <stdlib.h>
+#include "core_json.h"
 #include "CommonData.h"
 void clearWeekSet(WeekSet *weekSet) {
 	OneWeek empty;
@@ -26,9 +27,9 @@ int getWeekDay(WeekSet *weekSet, int week, int day) {
 	}
 	return 0;
 }
-char* WeekSetToJsonString(WeekSet *weekSet) {
+char* WeekSetToJsonString(WeekSet *weekSet,size_t size) {
 	js_write jswork;
-	js_write_start(&jswork, 2400);
+	js_write_start(&jswork, size);
 	js_write_array_start(&jswork, "wsets");
 	for (int i = 0; i < MAX_WEEKS ; ++i) {
 		js_write_value_start(&jswork, "");
@@ -41,7 +42,8 @@ char* WeekSetToJsonString(WeekSet *weekSet) {
 		js_write_value_end(&jswork);
 	}
 	js_write_array_end(&jswork);
-	return jswork->start;
+	js_write_end(&jswork);
+	return jswork.start;
 }
 void WeekSetFromJsonString(char* root, WeekSet *weekSet) {
 	js_read jswork;

@@ -15,9 +15,9 @@ void clearPhasesSet(PhasesSet *phasesSet) {
 		phasesSet->defPhase[i] = empty;
 	}
 }
-char* PhasesSetToJsonString(PhasesSet *phasesSet) {
+char* PhasesSetToJsonString(PhasesSet *phasesSet,size_t size) {
 	js_write jswork;
-	js_write_start(&jswork, 1200);
+	js_write_start(&jswork, size);
 	js_write_array_start(&jswork, "phases");
 	for (int i = 0; i < MAX_PHASES ; ++i) {
 		js_write_value_start(&jswork, "");
@@ -36,7 +36,7 @@ void PhasesSetFromJsonString(char *root, PhasesSet *phasesSet) {
 	js_read_start(&jswork, root);
 	js_read_array(&jswork, &jsarray, "phases");
 	for (int i = 0; i < MAX_PHASES; ++i) {
-		js_read_array_object(&jsarray, i, &object);
+		if (js_read_array_object(&jsarray, i, &object)!=JsonSuccess) break;
 		js_read_bool(&object, "work", &phasesSet->defPhase[i].work);
 		js_read_int(&object, "num",&phasesSet->defPhase[i].num );
 	}

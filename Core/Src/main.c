@@ -29,14 +29,9 @@
 #include "lwip/udp.h"
 #include <string.h>
 #include "Files.h"
-#include "parson.h"
 #include "DeviceTime.h"
 #include "DeviceLogger.h"
-#include "ServerModbusTCP.h"
-#include "ClientModbusTCP.h"
 #include "Transport.h"
-#include "modbus.h"
-#include "Camera.h"
 #include "CommonData.h"
 
 
@@ -100,7 +95,7 @@ void StartTCPTransport(void *argument);
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
 int ReadyETH=false;			//Готовность Ehernet
-int ReadyFiles=false;			//Готовность Share
+int ReadyFiles=false;			//Готовность системы
 /* USER CODE END 0 */
 
 /**
@@ -398,9 +393,10 @@ void StartMainTask(void *argument)
   ReadyETH=1;
   Debug_Init();
   FilesInit();
-  Debug_Message(LOG_INFO, "Запущена основная задача и логгер");
   DeviceLogInit();
   initCommonData();
+  ReadyFiles=1;
+  Debug_Message(LOG_INFO, "Система к работе готова");
   for (;;) {
 	  DebugLoggerLoop();
 	  osDelay(1000);

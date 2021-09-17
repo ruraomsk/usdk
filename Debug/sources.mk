@@ -53,5 +53,4 @@ USB_DEVICE/App \
 USB_DEVICE/Target \
 core_JSON \
 libmodbus \
-parson \
 

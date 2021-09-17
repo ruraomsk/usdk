@@ -9,7 +9,6 @@ RM := rm -rf
 
 # All of the sources participating in the build are defined here
 -include sources.mk
--include parson/subdir.mk
 -include libmodbus/subdir.mk
 -include core_JSON/subdir.mk
 -include USB_DEVICE/Target/subdir.mk

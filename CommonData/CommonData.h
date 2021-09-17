@@ -7,31 +7,24 @@
 
 #ifndef COMMONDATA_H_
 #define COMMONDATA_H_
-
-#include "parson.h"
-
-typedef enum {
-	false=0,
-	true,
-} boolean;
-
+#include <stdbool.h>
 #define MAX_WEEKS 	32
-#define MAX_DAYS  	32
-#define MAX_LINES 	64
+#define MAX_DAYS  	12
+#define MAX_LINES 	12
 #define MAX_PKS   	64
 #define MAX_PHASES 	32
 #define MAX_STAGES 	64
 //Описание одной фазы со всеми нужными вещами
 typedef struct {
 	int num;
-	boolean work;
+	bool work;
 } DefinePhase;
 //Все фазы устройства
-typedef struct{
-	DefinePhase defPhase[MAX_PHASES];
-}PhasesSet;
+typedef struct {
+	DefinePhase defPhase [ MAX_PHASES ];
+} PhasesSet;
 //Настройки ДК
-typedef struct{
+typedef struct {
 	int dkn;
 	int tmaxf;
 	int tminf;
@@ -39,25 +32,25 @@ typedef struct{
 	int dktype;
 	int extn;
 	int tprom;
-	boolean preset;
+	bool preset;
 } SetupDK;
 //Один месяц из годового плана
 typedef struct {
 	int num;
-	int weeks[31];
+	int weeks [ 31 ];
 } OneMonth;
 //Весь годовой набор
 typedef struct {
-	OneMonth months[12];
+	OneMonth months [ 12 ];
 } YearSet;
 //Одна строка недельного плана
 typedef struct {
 	int num;
-	int days[7];
+	int days [ 7 ];
 } OneWeek;
 //Все недельные планы
 typedef struct {
-	OneWeek weeks[MAX_WEEKS];
+	OneWeek weeks [ MAX_WEEKS ];
 } WeekSet;
 //Одна строка суточного плана
 typedef struct {
@@ -68,12 +61,12 @@ typedef struct {
 typedef struct {
 	int num;
 	int count;
-	Line lines[MAX_LINES];
-}OneDay;
+	Line lines [ MAX_LINES ];
+} OneDay;
 //Все суточные планы
 typedef struct {
-	OneDay days[MAX_DAYS];
-}DaySet;
+	OneDay days [ MAX_DAYS ];
+} DaySet;
 //Одна строка плана координации
 typedef struct {
 	int line;
@@ -81,45 +74,52 @@ typedef struct {
 	int stop;
 	int num;
 	int tf;
-	boolean plus;
-	boolean trs;
+	bool plus;
+	bool trs;
 	int dt;
-}Stage;
+} Stage;
 //Один план координации
 typedef struct {
 	int pk;
 	int tru;
-	boolean razlen;
+	bool razlen;
 	int tc;
 	int shift;
-	Stage stages[MAX_STAGES];
-}SetPk;
+	Stage stages [ MAX_STAGES ];
+} SetPk;
 //Все планы координации устройства
 typedef struct {
-	SetPk pks[MAX_PKS];
-}AllPks;
+	SetPk pks [ MAX_PKS ];
+} AllPks;
+
+//Настройки устройства
+typedef struct {
+	int ID;
+	bool Ethertnet;
+	bool Gprs;
+	bool Gps;
+	bool Usb;
+} DeviceStatus;
+//Настройки обмена по TCP
+typedef struct {
+	char ip [ 20 ];
+	int port;
+	int tread;
+	int twrite;
+	int tque;
+}TCPSet;
+
+
 void initCommonData(void);
-
-void clearSetupDK(SetupDK *setupDK);
-char *SetupDKToJsonString(SetupDK *setupDK);
-void SetupDKFromJsonString(char* root, SetupDK *setupDK);
-
-void clearWeekSet(WeekSet *weekSet);
 int getWeekDay(WeekSet *weekSet, int week, int day);
-
-void clearDaySet(DaySet *daySet);
 OneDay* getOneDay(DaySet *daySet, int num);
-char* DaySetToJsonString(DaySet *daySet);
-void DaySetFromJsonString(char *root, DaySet *daySet)
-
-void clearYearSet(YearSet *yearSet);
-int getYearDay(YearSet *yearSet, int month,int day);
-
-
-void clearPhasesSet(PhasesSet* phasesSet);
+int getYearDay(YearSet *yearSet, int month, int day);
 DefinePhase* getPhase(PhasesSet *phasesSet, int num);
-char* PhasesSetToJsonString(PhasesSet *phasesSet);
-void PhasesSetFromJsonString(char *root, PhasesSet *phasesSet);
 
-
+int Compare(char *name, void *data);
+bool GetCopy(char *name, void *data);
+bool SetCopy(char *name, const void *data);
+char* GetJsonString(char *name);
+bool SetJsonString(char *name,char* json);
+bool SetJsonString(char *name,char* json);
 #endif /* COMMONDATA_H_ */

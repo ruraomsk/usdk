@@ -13,88 +13,83 @@
 #include <stdio.h>
 
 JSONStatus_t js_write_start(js_write *work, size_t size) {
-	work->start = pvPortMalloc(size + 12);
+	work->start = pvPortMalloc(size );
 	if (work->start == NULL) return JSONNotMemory;
 	work->pos = work->start;
 	work->size = size;
 	*work->pos++ = '{';
 	return JsonSuccess;
 }
+JSONStatus_t js_verify(js_write *w){
+	if ((w->pos-w->start)>=w->size) return JSONNotMemory;
+	return JsonSuccess;
+}
 JSONStatus_t js_write_end(js_write *w) {
 	w->pos--;
-	snprintf(w->pos, w->size - (w->pos - w->start), "}");
-	w->pos += strlen(w->start);
-	return JsonSuccess;
+	w->pos +=snprintf(w->pos, w->size - (w->pos - w->start), "}");
+	return js_verify(w);
 }
 void js_write_free(js_write *work) {
 	vPortFree(work->start);
 }
 JSONStatus_t js_write_int(js_write *w, char *name, int value) {
 	if (strlen(name) == 0)
-		snprintf(w->pos, w->size - (w->pos - w->start), "%d,", value);
+		w->pos +=snprintf(w->pos, w->size - (w->pos - w->start), "%d,", value);
 	else
-		snprintf(w->pos, w->size - (w->pos - w->start), "\"%s\":%d,", name, value);
-	w->pos = w->start + strlen(w->start);
-	return JsonSuccess;
+		w->pos +=snprintf(w->pos, w->size - (w->pos - w->start), "\"%s\":%d,", name, value);
+	return js_verify(w);
 }
 JSONStatus_t js_write_string(js_write *w, char *name, char *value) {
 	if (strlen(name) == 0)
-		snprintf(w->pos, w->size - (w->pos - w->start), "\"%s\",", value);
+		w->pos +=snprintf(w->pos, w->size - (w->pos - w->start), "\"%s\",", value);
 	else
-		snprintf(w->pos, w->size - (w->pos - w->start), "\"%s\":\"%s\",", name, value);
-	w->pos = w->start + strlen(w->start);
-	return JsonSuccess;
+		w->pos +=snprintf(w->pos, w->size - (w->pos - w->start), "\"%s\":\"%s\",", name, value);
+	return js_verify(w);
 }
 JSONStatus_t js_write_bool(js_write *w, char *name, bool value) {
 	if (strlen(name) == 0) {
 		if (value)
-			snprintf(w->pos, w->size - (w->pos - w->start), "true,");
+			w->pos +=snprintf(w->pos, w->size - (w->pos - w->start), "true,");
 		else
-			snprintf(w->pos, w->size - (w->pos - w->start), "false,");
+			w->pos +=snprintf(w->pos, w->size - (w->pos - w->start), "false,");
 
 	} else {
 		if (value)
-			snprintf(w->pos, w->size - (w->pos - w->start), "\"%s\"true,", name);
+			w->pos +=snprintf(w->pos, w->size - (w->pos - w->start), "\"%s\":true,", name);
 		else
-			snprintf(w->pos, w->size - (w->pos - w->start), "\"%s\"false,", name);
+			w->pos +=snprintf(w->pos, w->size - (w->pos - w->start), "\"%s\":false,", name);
 	}
-	w->pos = w->start + strlen(w->start);
-	return JsonSuccess;
+	return js_verify(w);
 }
 JSONStatus_t js_write_double(js_write *w, char *name, double value) {
 	if (strlen(name) == 0)
-		snprintf(w->pos, w->size - (w->pos - w->start), "%f,", value);
+		w->pos +=snprintf(w->pos, w->size - (w->pos - w->start), "%f,", value);
 	else
-		snprintf(w->pos, w->size - (w->pos - w->start), "\"%s\":%f,", name, value);
-	w->pos = w->start + strlen(w->start);
-	return JsonSuccess;
+		w->pos +=snprintf(w->pos, w->size - (w->pos - w->start), "\"%s\":%f,", name, value);
+	return js_verify(w);
 }
 JSONStatus_t js_write_value_start(js_write *w, char *name) {
 	if (strlen(name) == 0)
-		snprintf(w->pos, w->size - (w->pos - w->start), "{");
+		w->pos +=snprintf(w->pos, w->size - (w->pos - w->start), "{");
 	else
-		snprintf(w->pos, w->size - (w->pos - w->start), "\"%s\":{", name);
-	w->pos = w->start + strlen(w->start);
-	return JsonSuccess;
+		w->pos +=snprintf(w->pos, w->size - (w->pos - w->start), "\"%s\":{", name);
+	return js_verify(w);
 }
 JSONStatus_t js_write_value_end(js_write *w) {
 	w->pos--;
-	snprintf(w->pos, w->size - (w->pos - w->start), "},");
-	w->pos = w->start + strlen(w->start);
-	return JsonSuccess;
+	w->pos +=snprintf(w->pos, w->size - (w->pos - w->start), "},");
+	return js_verify(w);
 }
 JSONStatus_t js_write_array_start(js_write *w, char *name) {
 	if (strlen(name) == 0)
-		snprintf(w->pos, w->size - (w->pos - w->start), "[");
+		w->pos +=snprintf(w->pos, w->size - (w->pos - w->start), "[");
 	else
-		snprintf(w->pos, w->size - (w->pos - w->start), "\"%s\":[", name);
-	w->pos = w->start + strlen(w->start);
-	return JsonSuccess;
+		w->pos +=snprintf(w->pos, w->size - (w->pos - w->start), "\"%s\":[", name);
+	return js_verify(w);
 }
 JSONStatus_t js_write_array_end(js_write *w) {
 	w->pos--;
-	snprintf(w->pos, w->size - (w->pos - w->start), "],");
-	w->pos = w->start + strlen(w->start);
-	return JsonSuccess;
+	w->pos +=snprintf(w->pos, w->size - (w->pos - w->start), "],");
+	return js_verify(w);
 }
 

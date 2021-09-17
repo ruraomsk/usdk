@@ -8,8 +8,10 @@
 #ifndef DEVICETIME_H_
 #define DEVICETIME_H_
 #include <time.h>
+#include <stdbool.h>
 #define DeviceTimeStep 100
 typedef unsigned long int dev_time;
+
 
 void DeviceTimeInit();
 dev_time GetDeviceTime(void);

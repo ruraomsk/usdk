@@ -16,9 +16,9 @@
 #include <stdarg.h>
 
 static SubNames DevLogWork[] = { { SUB_TRANSPORT, "Транспорт", NULL }, { SUB_FILES, "Файл", NULL }, { SUB_END, "\0",
-		NULL } };
-static osMutexId_t LogDevMutex;
-static RingBuffer *devicelogs;
+NULL } };
+osMutexId_t LogDevMutex;
+RingBuffer *devicelogs;
 DeviceLoggerMessage msg, oldmsg;
 void DeviceLogInit() {
 	LogDevMutex = osMutexNew(NULL);
@@ -38,8 +38,7 @@ void DeviceLogInit() {
 SubNames* getSubsystem(char sub) {
 	SubNames *result = DevLogWork;
 	while (result->subsystem != SUB_END) {
-		if (result->subsystem == sub)
-			return result;
+		if (result->subsystem == sub) return result;
 		result++;
 	}
 	return NULL;
@@ -49,16 +48,12 @@ FIL file;
 void saveRingBufferToFile() {
 	LockFiles();
 	FATFS *fs;
-	DWORD free_clust, free_sect;
+	DWORD free_clust;
 	if (f_getfree("", &free_clust, &fs)) {
 		Debug_Message(LOG_ERROR, "Ошибка чтения свободного места для  файла сохранения логов");
-		while (RingBufferTryRead(devicelogs, (void*) &oldmsg) == RINGBUFFER_OK) {
-		}
-		UnlockFiles();
 		return;
 	}
-	free_sect = free_clust * fs->csize;
-	if (free_sect < NEED_FOR_SAVING) {
+	if (free_clust * fs->csize < (MAX_LEN_MESSAGE + 20) * CAPACITY_MESSAGES) {
 		Debug_Message(LOG_INFO, "Нет свободного места для  файла сохранения логов удаляем его...");
 		f_unlink("logdev");
 	}
@@ -74,11 +69,12 @@ void saveRingBufferToFile() {
 		return;
 	}
 	char *buf = pvPortMalloc(MAX_LEN_MESSAGE);
-	if (buf!=NULL){
+	if (buf != NULL) {
 		while (RingBufferTryRead(devicelogs, (void*) &oldmsg) == RINGBUFFER_OK) {
-			UINT bw;
-			sprintf(buf, "%s\t%s\t%s\n", TimeToString(oldmsg.time), getSubsystem(oldmsg.subsystem)->name, oldmsg.message);
-			f_write(&file, buf, strlen(buf), &bw);
+			UINT bw, size;
+			size = snprintf(buf, MAX_LEN_MESSAGE, "%s\t%s\t%s\n", TimeToString(oldmsg.time),
+					getSubsystem(oldmsg.subsystem)->name, oldmsg.message);
+			f_write(&file, buf, size, &bw);
 		}
 	}
 	vPortFree(buf);
@@ -86,19 +82,14 @@ void saveRingBufferToFile() {
 	UnlockFiles();
 }
 void DeviceLog(char subsytem, char *fmt, ...) {
-	HeapStats_t pxHeapStats;
-
-	vPortGetHeapStats(&pxHeapStats);
-
 	if (osMutexAcquire(LogDevMutex, osWaitForever) == osOK) {
 		SubNames *subName = getSubsystem(subsytem);
 		if (subName != NULL) {
 			va_list ap;
 			va_start(ap, fmt);
-			char *message = pvPortMalloc(3 * MAX_LEN_MESSAGE);
-			if(message==NULL) return;
-			vsprintf(message, fmt, ap);
-			message[MAX_LEN_MESSAGE - 1] = 0;
+			char *message = pvPortMalloc(MAX_LEN_MESSAGE);
+			if (message == NULL) return;
+			vsnprintf(message,MAX_LEN_MESSAGE, fmt, ap);
 			//Если такое сообщение уже посылали то и нефиг его записывать
 			if (strcmp(subName->lastMessage, message) != 0) {
 				strcpy(subName->lastMessage, message);
@@ -117,11 +108,21 @@ void DeviceLog(char subsytem, char *fmt, ...) {
 		}
 		osMutexRelease(LogDevMutex);
 	}
-	vPortGetHeapStats(&pxHeapStats);
 }
-
-JSON_Value* DeviceLogToJSON() {
-	JSON_Value *result = NULL;
-	return result;
+// Создает в строке json один элемент массива сообщения если вернули false значит не осталось сообщений
+bool LogLineToJsonSubString(js_write *w) {
+	if (osMutexAcquire(LogDevMutex, osWaitForever) == osOK) {
+		if (RingBufferTryRead(devicelogs, (void*) &msg) != RINGBUFFER_OK) {
+			js_write_value_start(w, "");
+			js_write_int(w, "time", msg.time);
+			js_write_string(w, "sub",getSubsystem(msg.subsystem)->name );
+			js_write_string(w, "mess",msg.message);
+			js_write_value_end(w);
+			osMutexRelease(LogDevMutex);
+			return true;
+		}
+		osMutexRelease(LogDevMutex);
+	}
+	return false;
 }
 

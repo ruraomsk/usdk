@@ -13,14 +13,10 @@ extern "C" {
 
 #include <search.h>
 #include "cmsis_os.h"
-#include "parson.h"
 
 int FilesInit(void);
-
-
-void ShareSaveChange(void);
-JSON_Value* FilesGetJson(char *chart);
-void FilesSetJson(char *chart, JSON_Value *value);
+char* FilesGetJsonString(char *path);
+void FilesSetJsonString(char *path, char *value);
 void LockFiles(void);
 void UnlockFiles(void);
 

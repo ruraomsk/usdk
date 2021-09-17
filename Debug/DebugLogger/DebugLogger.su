@@ -1,4 +1,4 @@
-DebugLogger.c:21:6:Debug_Init	8	static
-DebugLogger.c:26:6:Debug_Message	28	static
-DebugLogger.c:40:7:Debuger_Status	16	static
-DebugLogger.c:55:6:DebugLoggerLoop	80	static
+DebugLogger.c:20:6:Debug_Init	8	static
+DebugLogger.c:25:6:Debug_Message	28	static
+DebugLogger.c:39:7:Debuger_Status	16	static
+DebugLogger.c:54:6:DebugLoggerLoop	80	static

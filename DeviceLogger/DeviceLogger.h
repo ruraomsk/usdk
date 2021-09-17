@@ -10,11 +10,11 @@
 
 #include "DeviceTime.h"
 #include "RingBuffer.h"
-#include "parson.h"
+#include "core_json.h"
 
-#define MAX_LEN_MESSAGE 120    		//Максимальная длина строки сообщения
+
+#define MAX_LEN_MESSAGE 80    		//Максимальная длина строки сообщения
 #define CAPACITY_MESSAGES 100		//Мксимальное  число элементов в буфере логов
-#define NEED_FOR_SAVING  10000
 
 enum {
 	SUB_END =0,
@@ -36,7 +36,6 @@ typedef struct {
 
 void DeviceLog(char subsytem,char*fmt,...);
 void DeviceLogInit(void);
-JSON_Value* DeviceLogToJSON(void);
-
+bool LogLineToJsonSubString(js_write *w);
 
 #endif /* DEVICELOGGER_H_ */
