@@ -42,9 +42,9 @@ JSONStatus_t js_read_array_int(js_read* array,size_t index,int *value){
 	JSONStatus_t result = arraySearch( array->buffer, array->size, index,&val, &array->valueLength);
 	if (result != JsonSuccess) return result;
 	char save=array->buffer[array->valueLength];
-	array->buffer[array->valueLength]=0;
+	array->buffer[val+array->valueLength]=0;
 	sscanf(array->buffer+val,"%i",value);
-	array->buffer[array->valueLength]=save;
+	array->buffer[val+array->valueLength]=save;
 	return JsonSuccess;
 }
 JSONStatus_t js_read_array_string(js_read* array,size_t index,char *value){
@@ -52,9 +52,9 @@ JSONStatus_t js_read_array_string(js_read* array,size_t index,char *value){
 	JSONStatus_t result = arraySearch( array->buffer, array->size, index,&val, &array->valueLength);
 	if (result != JsonSuccess) return result;
 	char save=array->buffer[array->valueLength];
-	array->buffer[array->valueLength]=0;
+	array->buffer[val+array->valueLength]=0;
 	sscanf(array->buffer+val,"%s",value);
-	array->buffer[array->valueLength]=save;
+	array->buffer[val+array->valueLength]=save;
 	return JsonSuccess;
 }
 JSONStatus_t js_read_array_double(js_read* array,size_t index,double *value){
@@ -62,9 +62,9 @@ JSONStatus_t js_read_array_double(js_read* array,size_t index,double *value){
 	JSONStatus_t result = arraySearch( array->buffer, array->size, index,&val, &array->valueLength);
 	if (result != JsonSuccess) return result;
 	char save=array->buffer[array->valueLength];
-	array->buffer[array->valueLength]=0;
+	array->buffer[val+array->valueLength]=0;
 	sscanf(array->buffer+val,"%lf",value);
-	array->buffer[array->valueLength]=save;
+	array->buffer[val+array->valueLength]=save;
 	return JsonSuccess;
 }
 JSONStatus_t js_read_array_bool(js_read* array,size_t index,bool *value){
@@ -84,28 +84,28 @@ JSONStatus_t js_read_start(js_read* w, char* buffer){
 JSONStatus_t js_read_int(js_read* w,char* name,int *value){
 	JSONStatus_t result = JSON_Search( w->buffer, w->size, name, strlen(name),&w->value, &w->valueLength);
 	if (result != JsonSuccess) return result;
-	char save=w->buffer[w->valueLength];
-	w->buffer[w->valueLength]=0;
+	char save=w->value[w->valueLength];
+	w->value[w->valueLength]=0;
 	sscanf(w->value,"%i",value);
-	w->buffer[w->valueLength]=save;
+	w->value[w->valueLength]=save;
 	return JsonSuccess;
 }
 JSONStatus_t js_read_string(js_read* w,char* name,char *value){
 	JSONStatus_t result = JSON_Search( w->buffer, w->size, name, strlen(name),&w->value, &w->valueLength);
 	if (result != JsonSuccess) return result;
-	char save=w->buffer[w->valueLength];
-	w->buffer[w->valueLength]=0;
+	char save=w->value[w->valueLength];
+	w->value[w->valueLength]=0;
 	sscanf(w->value,"%s",value);
-	w->buffer[w->valueLength]=save;
+	w->value[w->valueLength]=save;
 	return JsonSuccess;
 }
 JSONStatus_t js_read_double(js_read* w,char* name,double *value){
 	JSONStatus_t result = JSON_Search( w->buffer, w->size, name, strlen(name),&w->value, &w->valueLength);
 	if (result != JsonSuccess) return result;
-	char save=w->buffer[w->valueLength];
-	w->buffer[w->valueLength]=0;
+	char save=w->value[w->valueLength];
+	w->value[w->valueLength]=0;
 	sscanf(w->value,"%lf",value);
-	w->buffer[w->valueLength]=save;
+	w->value[w->valueLength]=save;
 	return JsonSuccess;
 }
 JSONStatus_t js_read_bool(js_read* w,char* name,bool *value){
@@ -113,6 +113,13 @@ JSONStatus_t js_read_bool(js_read* w,char* name,bool *value){
 	if (result != JsonSuccess) return result;
 	if (*w->value==0x54 ||*w->value==0x74 )	*value=true;
 	else *value=false;
+	return JsonSuccess;
+}
+JSONStatus_t js_read_value(js_read* w,char* name,js_read* value){
+	JSONStatus_t result = JSON_Search( w->buffer, w->size, name, strlen(name),&w->value, &w->valueLength);
+	if (result != JsonSuccess) return result;
+	value->buffer=w->value;
+	value->size=w->valueLength;
 	return JsonSuccess;
 }
 

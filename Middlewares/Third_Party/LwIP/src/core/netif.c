@@ -296,13 +296,13 @@ netif_add(struct netif *netif,
   LWIP_ERROR("netif_add: No init function given", init != NULL, return NULL);
 
 #if LWIP_IPV4
-  if (ipaddr == NULL) {
+  if (ipaddr->addr == 0) {
     ipaddr = ip_2_ip4(IP4_ADDR_ANY);
   }
-  if (netmask == NULL) {
+  if (netmask->addr == 0) {
     netmask = ip_2_ip4(IP4_ADDR_ANY);
   }
-  if (gw == NULL) {
+  if (gw->addr == 0) {
     gw = ip_2_ip4(IP4_ADDR_ANY);
   }
 

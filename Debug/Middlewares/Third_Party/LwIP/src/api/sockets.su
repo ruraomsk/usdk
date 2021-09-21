@@ -1,5 +1,8 @@
 sockets.c:320:1:lwip_socket_thread_init	4	static
 sockets.c:327:1:lwip_socket_thread_cleanup	4	static
+sockets.c:335:1:sock_inc_used	24	static
+sockets.c:357:1:sock_inc_used_locked	16	static
+sockets.c:377:1:done_socket	40	static
 sockets.c:411:1:tryget_socket_unconn_nouse	24	static
 sockets.c:422:1:lwip_socket_dbg_get_socket	16	static
 sockets.c:429:1:tryget_socket_unconn	24	static
@@ -33,8 +36,13 @@ sockets.c:1752:1:lwip_writev	56	static
 sockets.c:1771:1:lwip_link_select_cb	16	static
 sockets.c:1795:1:lwip_unlink_select_cb	16	static
 sockets.c:1835:1:lwip_selscan	104	static
-sockets.c:1964:1:lwip_select	136	static
+sockets.c:1907:1:lwip_select_inc_sockets_used_set	40	static
+sockets.c:1934:1:lwip_select_inc_sockets_used	32	static
+sockets.c:1944:1:lwip_select_dec_sockets_used	24	static
+sockets.c:1964:1:lwip_select	144	static
 sockets.c:2193:1:lwip_pollscan	56	static
+sockets.c:2284:1:lwip_poll_inc_sockets_used	24	static
+sockets.c:2299:1:lwip_poll_dec_sockets_used	24	static
 sockets.c:2319:1:lwip_poll	72	static
 sockets.c:2438:1:lwip_poll_should_wake	32	static
 sockets.c:2477:1:event_callback	48	static

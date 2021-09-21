@@ -52,7 +52,7 @@
 /*----- Default value in ETH configuration GUI in CubeMx: 1524 -----*/
 #define ETH_RX_BUFFER_SIZE 1524
 /*----- Default Value for MEMP_NUM_UDP_PCB: 4 ---*/
-#define MEMP_NUM_UDP_PCB 5
+#define MEMP_NUM_UDP_PCB 1
 /*----- Default Value for MEMP_NUM_TCP_PCB: 5 ---*/
 #define MEMP_NUM_TCP_PCB 20
 /*----- Value in opt.h for MEM_ALIGNMENT: 1 -----*/
@@ -99,12 +99,16 @@
 #define DEFAULT_ACCEPTMBOX_SIZE 6
 /*----- Default Value for LWIP_TCPIP_TIMEOUT: 0 ---*/
 #define LWIP_TCPIP_TIMEOUT 1
+/*----- Default Value for LWIP_NETCONN_FULLDUPLEX: 0 ---*/
+#define LWIP_NETCONN_FULLDUPLEX 1
 /*----- Default Value for LWIP_SO_SNDTIMEO: 0 ---*/
 #define LWIP_SO_SNDTIMEO 1
 /*----- Default Value for LWIP_SO_RCVTIMEO: 0 ---*/
 #define LWIP_SO_RCVTIMEO 1
 /*----- Value in opt.h for RECV_BUFSIZE_DEFAULT: INT_MAX -----*/
-#define RECV_BUFSIZE_DEFAULT 2000000000
+#define RECV_BUFSIZE_DEFAULT 20000
+/*----- Default Value for LWIP_TCP_CLOSE_TIMEOUT_MS_DEFAULT: 20000 ---*/
+#define LWIP_TCP_CLOSE_TIMEOUT_MS_DEFAULT 2000
 /*----- Value in opt.h for LWIP_STATS: 1 -----*/
 #define LWIP_STATS 0
 /*----- Value in opt.h for CHECKSUM_GEN_IP: 1 -----*/

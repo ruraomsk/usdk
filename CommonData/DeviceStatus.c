@@ -13,7 +13,7 @@
 void clearDeviceStatus(DeviceStatus *ds) {
 	ds->ID=8;
 	ds->Ethertnet=true;
-	ds->Gprs=true;
+	ds->Gprs=false;
 	ds->Gps=true;
 	ds->Usb=true;
 }

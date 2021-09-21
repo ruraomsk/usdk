@@ -10,6 +10,8 @@
 #include "DeviceLogger.h"
 #include "core_json.h"
 #include "Common_private.h"
+#include <stdio.h>
+#include <string.h>
 
 PhasesSet phasesSet;
 SetupDK setupDK;

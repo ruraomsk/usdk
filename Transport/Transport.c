@@ -16,8 +16,8 @@
 int GPRSNeed = 0;			//Готовность работы GPRS если есть
 int FromServerTCPStart = 0;
 int FromServerGPRSStart = 0;
-int TCPError = 0;
-int GPRSError = 0;
+ErrorTransport TCPError = 0;
+ErrorTransport GPRSError = 0;
 
 //Очереди для Ethernet
 osMessageQueueId_t ToServerQueue;
@@ -56,11 +56,17 @@ osThreadId_t FromServerGPRSHandle;
 const osThreadAttr_t FromServerGPRS_attributes = { .name = "FromGPRS",
 		.stack_size = 256 * 4, .priority = (osPriority_t) osPriorityNormal, };
 
+osThreadId_t TechExchHandle;
+const osThreadAttr_t TechExch_attributes = { .name = "TechExch",
+		.stack_size = 256 * 4, .priority = (osPriority_t) osPriorityNormal, };
 
 #define tout 10
 void startGPRS() {
 	MessageFromQueue msg;
 	int c = 1;
+	DeviceStatus devStatus;
+	GetCopy("setup", &devStatus);
+	if (!devStatus.Gprs) return;
 	msg.error = TRANSPORT_STOP;
 	osMessageQueuePut(ToServerQueue, &msg, 0, 0);
 	osMessageQueuePut(ToServerSecQueue, &msg, 0, 0);
@@ -71,6 +77,9 @@ void startGPRS() {
 void stopGPRS() {
 	MessageFromQueue msg;
 	int c = 0;
+	DeviceStatus devStatus;
+	GetCopy("setup", &devStatus);
+	if (!devStatus.Gprs) return;
 	msg.error = TRANSPORT_STOP;
 	osMessageQueuePut(GPRSToServerQueue, &msg, 0, 0);
 	osMessageQueuePut(GPRSToServerSecQueue, &msg, 0, 0);
@@ -174,7 +183,16 @@ void mainTransportLoop(void) {
 	//0 - Переход от GPRS на Ethernet
 	//1 - Переход от Ethernet на GPRS
 	//-1 - Нет связи с внешним миром
-
+// Временно длдя отладки
+	TCPSet mainTCP,secTCP;
+	GetCopy("cmain",&mainTCP);
+	mainTCP.tread=300;
+	mainTCP.twrite=3;
+	SetCopy("cmain", &mainTCP);
+	GetCopy("csec",&secTCP);
+	secTCP.tread=3;
+	secTCP.twrite=3;
+	SetCopy("csec", &secTCP);
 	MainChangeStatus = osMessageQueueNew(6, sizeof(int), NULL);
 	DeviceStatus devStatus;
 	GetCopy("setup", &devStatus);
@@ -184,18 +202,21 @@ void mainTransportLoop(void) {
 				&FromServerTCP_attributes);
 
 		/* creation of ToServerTCP */
-		ToServerTCPHandle = osThreadNew(StartToServerTCP, NULL,
-				&ToServerTCP_attributes);
+//		ToServerTCPHandle = osThreadNew(StartToServerTCP, NULL,
+//				&ToServerTCP_attributes);
 	}
 	if (devStatus.Gprs){
 		/* creation of FromServerGPRS */
-		FromServerGPRSHandle = osThreadNew(StartFromServerGPRS, NULL,
-				&FromServerGPRS_attributes);
-
-		/* creation of ToServerGPRS */
-		ToServerGPRSHandle = osThreadNew(StartToServerGPRS, NULL,
-				&ToServerGPRS_attributes);
+//		FromServerGPRSHandle = osThreadNew(StartFromServerGPRS, NULL,
+//				&FromServerGPRS_attributes);
+//
+//		/* creation of ToServerGPRS */
+//		ToServerGPRSHandle = osThreadNew(StartToServerGPRS, NULL,
+//				&ToServerGPRS_attributes);
 	}
+
+	TechExchHandle = osThreadNew(TechExchange, NULL,
+			&TechExch_attributes);
 
 	if (!devStatus.Ethertnet && !devStatus.Gprs) {
 		noETHandGPRS();

@@ -373,7 +373,7 @@ JSONStatus_t js_read_array_int(js_read* array,size_t index,int *value);
 JSONStatus_t js_read_array_string(js_read* array,size_t index,char *value);
 JSONStatus_t js_read_array_double(js_read* array,size_t index,double *value);
 JSONStatus_t js_read_array_bool(js_read* array,size_t index,bool *value);
-
+JSONStatus_t js_read_value(js_read* w,char* name,js_read* value);
 
 #ifdef __cplusplus
     }
