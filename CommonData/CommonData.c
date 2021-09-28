@@ -25,14 +25,14 @@ TCPSet secondTCP;
 osMutexId_t commonMutex;
 // @formatter:off
 CommonData cD[] = {
-		{ .name = "phases", .data = &phasesSet, .size = sizeof(PhasesSet), .sbuf = 1200, .to_json =	&PhasesSetToJsonString, .from_json = &PhasesSetFromJsonString,.clear=&clearPhasesSet},
-		{ .name = "setdk", .data = &setupDK, .size =sizeof(SetupDK), .sbuf = 120, .to_json = &SetupDKToJsonString, .from_json = &SetupDKFromJsonString,.clear=&clearSetupDK},
-		{ .name = "year", .data = &yearSet, .size = sizeof(YearSet), .sbuf = 1200, .to_json =&YearSetToJsonString, .from_json =&YearSetFromJsonString,.clear=&clearYearSet },
-		{ .name = "week", .data = &weekSet, .size = sizeof(WeekSet), .sbuf = 1200, .to_json =&WeekSetToJsonString, .from_json = &WeekSetFromJsonString,.clear=&clearWeekSet},
-		{ .name = "day", .data = &daySet, .size =sizeof(DaySet), .sbuf = 4800, .to_json = &DaySetToJsonString, .from_json = &DaySetFromJsonString,.clear=&clearDaySet },
-		{ .name = "setup", .data = &deviceStatus, .size =sizeof(DeviceStatus), .sbuf = 1200, .to_json = &DeviceStatusToJsonString, .from_json = &DeviceStatusFromJsonString,.clear=&clearDeviceStatus},
-		{ .name="cmain",.data=&mainTCP,.size=sizeof(TCPSet),.sbuf=80,.to_json=&TCPSetToJsonString,.from_json=&TCPSetFromJsonString,.clear=&clearTCPSet},
-		{ .name="csec",.data=&secondTCP,.size=sizeof(TCPSet),.sbuf=80,.to_json=&TCPSetToJsonString,.from_json=&TCPSetFromJsonString,.clear=&clearTCPSet},
+		{ .name = "phases", .data = (void *)&phasesSet, .size = sizeof(PhasesSet), .sbuf = 1200, .to_json =	&PhasesSetToJsonString, .from_json = &PhasesSetFromJsonString,.by_default=&clearPhasesSet},
+		{ .name = "setdk", .data = (void *)&setupDK, .size =sizeof(SetupDK), .sbuf = 120, .to_json = &SetupDKToJsonString, .from_json = &SetupDKFromJsonString,.by_default=&clearSetupDK},
+		{ .name = "year", .data = (void *)&yearSet, .size = sizeof(YearSet), .sbuf = 1200, .to_json =&YearSetToJsonString, .from_json =&YearSetFromJsonString,.by_default=&clearYearSet },
+		{ .name = "week", .data = (void *)&weekSet, .size = sizeof(WeekSet), .sbuf = 1200, .to_json =&WeekSetToJsonString, .from_json = &WeekSetFromJsonString,.by_default=&clearWeekSet},
+		{ .name = "day", .data = (void *)&daySet, .size =sizeof(DaySet), .sbuf = 4800, .to_json = &DaySetToJsonString, .from_json = &DaySetFromJsonString,.by_default=&clearDaySet },
+		{ .name = "setup", .data = (void *)&deviceStatus, .size =sizeof(DeviceStatus), .sbuf = 1200, .to_json = &DeviceStatusToJsonString, .from_json = &DeviceStatusFromJsonString,.by_default=&clearDeviceStatus},
+		{ .name="cmain",.data=(void *)&mainTCP,.size=sizeof(TCPSet),.sbuf=80,.to_json=&TCPSetToJsonString,.from_json=&TCPSetFromJsonString,.by_default=&clearTCPSet},
+		{ .name="csec",.data=(void *)&secondTCP,.size=sizeof(TCPSet),.sbuf=80,.to_json=&TCPSetToJsonString,.from_json=&TCPSetFromJsonString,.by_default=&clearTCPSet},
 		{ .name =NULL }
 };
 // @formatter:on
@@ -41,11 +41,11 @@ void initCommonData(void) {
 	commonMutex=osMutexNew(NULL);
 	for (int i = 0;; ++i) {
 		if (cD [ i ].name == NULL) break;
-		cD [ i ].clear(cD [ i ].data);
 		snprintf(path, sizeof(path), "set/%s.set", cD [ i ].name);
 		char *json = FilesGetJsonString(path);
 		if (json == NULL) {
 			DeviceLog(SUB_FILES, "Нет данных %s", path);
+			cD [ i ].by_default(cD [ i ].data);
 			json = cD [ i ].to_json(cD [ i ].data, cD [ i ].sbuf);
 			if (json != NULL) {
 				FilesSetJsonString(path, json);

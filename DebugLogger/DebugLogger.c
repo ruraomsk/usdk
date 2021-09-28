@@ -6,7 +6,7 @@
  */
 
 #include "DebugLogger.h"
-
+#include <lwip.h>
 #include "main.h"
 #include <string.h>
 #include "cmsis_os.h"
@@ -14,6 +14,7 @@
 #include "Files.h"
 #include <stdarg.h>
 #include <stdio.h>
+#include <sockets.h>
 #define SIZE_LOGGER_BUFFER 256
 osMessageQueueId_t DebugLoggerQueue;
 char *LoggerBuffer = NULL;
@@ -29,7 +30,7 @@ void Debug_Message(int level, char *fmt, ...) {
 	vPortGetHeapStats(&pxHeapStats);
 	newLog = pvPortMalloc(sizeof(DebugLoggerMsg));
 	if (newLog==NULL) return;
-	vsnprintf(newLog->Buffer, sizeof(newLog->Buffer), fmt, ap);
+	vsnprintf(newLog->Buffer, sizeof(newLog->Buffer)-1, fmt, ap);
 	newLog->Level = level;
 	newLog->time = GetDeviceTime();
 	newLog->size=pxHeapStats.xAvailableHeapSpaceInBytes;
@@ -54,17 +55,56 @@ DebugLoggerMsg msg;
 void DebugLoggerLoop() {
 	FIL flog;
 	UINT bw;
+	struct sockaddr_in server;
+	int socket=-1;
+	server.sin_family=AF_INET;
+	server.sin_port=htons(2095);
+	inet_aton("192.168.115.159",&server.sin_addr.s_addr);
+	socket=socket(AF_INET,SOCK_STREAM,0);
+	if (socket>=0){
+		int err;
+		do{
+			osDelay(1000);
+			err=connect(socket, (struct sockaddr* ) &server, sizeof(struct sockaddr_in));
+
+		} while(err!=0);
+	}
 	Debug_Message(LOG_INFO, "Logger запущен");
+#define COUNTER 5000
+	int count=COUNTER;
 	/* Infinite loop */
 	for (;;) {
 		if (osMessageQueueGet(DebugLoggerQueue, &msg, NULL, 10) == osOK) {
+			count=COUNTER;
 			snprintf(LoggerBuffer,SIZE_LOGGER_BUFFER, "%s:%6s:%6d:%s\n", TimeToString(msg.time), Debuger_Status(msg.Level),msg.size, msg.Buffer);
+			while (socket>=0){
+				int err=send(socket,LoggerBuffer,strlen(LoggerBuffer),0);
+				if (err<0) {
+					shutdown(socket, SHUT_RDWR);
+					close(socket);
+					socket=-1;
+
+//					int err;
+//					do{
+//						osDelay(1000);
+//						err=connect(socket, (struct sockaddr* ) &server, sizeof(struct sockaddr_in));
+//
+//					} while(err!=0);
+//					continue;
+				}
+				break;
+			}
 			f_open(&flog, "debug.log", FA_WRITE | FA_OPEN_ALWAYS);
 			f_lseek(&flog, f_size(&flog));
 			f_write(&flog, LoggerBuffer, strlen(LoggerBuffer), &bw);
 			f_close(&flog);
+
 		} else {
-			osDelay(100);
+			count--;
+			if (count <0 ){
+				count=COUNTER;
+				Debug_Message(LOG_INFO, "Работаем");
+			}
 		}
 	}
 }

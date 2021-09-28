@@ -15,8 +15,8 @@
 extern int TCPError;
 extern int GPRSError;
 extern int GPRSNeed;			//Готовность работы GPRS если есть
-extern int FromServerTCPStart;
-extern int FromServerGPRSStart;
+extern int ToServerTCPStart;
+extern int ToServerGPRSStart;
 extern osMutexId_t TransportMutex;
 
 void readSocket(int socket, char *buffer, size_t size) {
@@ -57,40 +57,40 @@ char* makeConnectString(const size_t buffersize, char *typestring) {
 	}
 	return result;
 }
-void setFromServerTCPStart(int v) {
+void setToServerTCPStart(bool v) {
 	if (osMutexAcquire(TransportMutex, osWaitForever) == osOK) {
-		FromServerTCPStart = v;
+		ToServerTCPStart = v;
 		osMutexRelease(TransportMutex);
 	}
 }
-void setFromServerGPRSStart(int v) {
+void setToServerGPRSStart(bool v) {
 	if (osMutexAcquire(TransportMutex, osWaitForever) == osOK) {
-		FromServerGPRSStart = v;
+		ToServerGPRSStart = v;
 		osMutexRelease(TransportMutex);
 	}
 }
-void setGPRSNeed(int v) {
+void setGPRSNeed(bool v) {
 	if (osMutexAcquire(TransportMutex, osWaitForever) == osOK) {
 		GPRSNeed = v;
 		osMutexRelease(TransportMutex);
 	}
 }
-void setGoodTCP(int v) {
+void setGoodTCP(bool v) {
 	if (osMutexAcquire(TransportMutex, osWaitForever) == osOK) {
 		TCPError = v;
 		osMutexRelease(TransportMutex);
 	}
 }
-void setGoodGPRS(int v) {
+void setGoodGPRS(bool v) {
 	if (osMutexAcquire(TransportMutex, osWaitForever) == osOK) {
 		GPRSError = v;
 		osMutexRelease(TransportMutex);
 	}
 }
-int isGoodTCP() {
+bool isGoodTCP() {
 	return TCPError;
 }
-int isGoodGPRS() {
+bool isGoodGPRS() {
 	return GPRSError;
 }
 void BadTCP(char *buffer, int socket, osMessageQueueId_t que) {

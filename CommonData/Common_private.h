@@ -17,7 +17,7 @@ typedef struct {
 	size_t sbuf;
 	char* (*to_json) (void *,size_t);
 	void (*from_json) (char *,void *);
-	void (*clear) (void *);
+	void (*by_default) (void *);
 }CommonData;
 
 

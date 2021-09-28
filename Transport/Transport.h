@@ -10,6 +10,8 @@
 
 #include "cmsis_os.h"
 #include <stddef.h>
+#include <stdbool.h>
+
 
 #define STEP_TCP 				3000
 #define STEP_GPRS 				3000
@@ -27,6 +29,11 @@ typedef struct {
 	ErrorTransport error;
 	char *message;
 } MessageFromQueue;
+typedef struct {
+	int Interval;
+	bool Control;
+	int Count;
+} Interval;
 
 
 
@@ -35,13 +42,13 @@ void mainTransportLoop(void);
 char* makeConnectString(const size_t buffersize,char *typestring);
 void BadTCP(char *buffer,int socket,osMessageQueueId_t que);
 void BadGPRS(char *buffer,int socket,osMessageQueueId_t que);
-void setGoodTCP(int v);
-void setGoodGPRS(int v);
-int  isGoodTCP(void);
-int  isGoodGPRS(void);
-void setFromServerTCPStart(int v);
-void setFromServerGPRSStart(int v);
-void setGPRSNeed(int v);
+void setGoodTCP(bool v);
+void setGoodGPRS(bool v);
+bool  isGoodTCP(void);
+bool  isGoodGPRS(void);
+void setToServerTCPStart(bool v);
+void setToServerGPRSStart(bool v);
+void setGPRSNeed(bool v);
 void readSocket(int socket,char *buffer,size_t size);
 
 void TechExchange(void *argument);

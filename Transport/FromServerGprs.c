@@ -1,10 +1,3 @@
-/*
- * FromServerGprs.c
- *
- *  Created on: 30 авг. 2021 г.
- *      Author: rura
- */
-
 #include "lwip.h"
 #include "DebugLogger.h"
 #include "DeviceLogger.h"
@@ -12,24 +5,24 @@
 #include "sockets.h"
 #include "Files.h"
 #include "CommonData.h"
-
 extern osMessageQueueId_t GPRSToServerQueue;
 extern osMessageQueueId_t GPRSFromServerQueue;
 
 void FromServerGPRSLoop(void) {
+	char name[]="FromServerGPRS";
 	int socket = -1;
 	char *buffer = NULL;
 	if (isGoodTCP()) return;
+	TCPSet tcpSet;
+	GetCopy("cmain", &tcpSet);
 	int err;
 	struct sockaddr_in srv_addr;
-	TCPSet tcpSet;
-	GetCopy("csec",&tcpSet);
-	inet_aton(tcpSet.ip, &srv_addr.sin_addr.s_addr);
+	err = inet_aton(tcpSet.ip, &srv_addr.sin_addr.s_addr);
 	srv_addr.sin_family = AF_INET;
 	srv_addr.sin_port = htons(tcpSet.port);
 	socket = socket(AF_INET, SOCK_STREAM, 0);
 	if (socket < 0) {
-		DeviceLog(SUB_TRANSPORT, "FromServerGPRS Не могу создать сокет %d", errno);
+		Debug_Message(LOG_ERROR, "%s Не могу создать сокет %d",name, errno);
 		BadGPRS(buffer, socket, GPRSFromServerQueue);
 		return;
 	}
@@ -43,13 +36,7 @@ void FromServerGPRSLoop(void) {
 	toque = toque / STEP_CONTROL;
 	err = connect(socket, (struct sockaddr* ) &srv_addr, sizeof(struct sockaddr_in));
 	if (err != 0) {
-		DeviceLog(SUB_TRANSPORT, "FromServerGPRS Нет соединения с сервером по основному каналу");
-		BadGPRS(buffer, socket, GPRSFromServerQueue);
-		return;
-	}
-	buffer = pvPortMalloc(MAX_LEN_TCP_MESSAGE);
-	if(buffer==NULL){
-		DeviceLog(SUB_TRANSPORT, "FromServerGPRS Нет памяти");
+		Debug_Message(LOG_ERROR, "%s Нет соединения с сервером по основному каналу",name);
 		BadGPRS(buffer, socket, GPRSFromServerQueue);
 		return;
 	}
@@ -58,34 +45,35 @@ void FromServerGPRSLoop(void) {
 	buffer[len] = '\n';
 	buffer[len + 1] = 0;
 	err = send(socket, buffer, strlen(buffer), 0);
-	osDelay(100);
 	if (err < 0) {
-		DeviceLog(SUB_TRANSPORT, "FromServerGPRS Не смог передать строку %.20s", buffer);
+		Debug_Message(LOG_ERROR, "%s Не смог передать строку %.20s",name, buffer);
 		BadGPRS(buffer, socket, GPRSFromServerQueue);
 		return;
 	}
 	vPortFree(buffer);
+
 	for (;;) {
 		buffer = pvPortMalloc(MAX_LEN_TCP_MESSAGE);
 		if(buffer==NULL){
-			DeviceLog(SUB_TRANSPORT, "FromServerGPRS Нет памяти");
+			Debug_Message(LOG_ERROR, "%s Нет памяти",name);
 			BadGPRS(buffer, socket, GPRSFromServerQueue);
 			return;
 		}
+		GetCopy("cmain", &tcpSet);
+		tv.tv_sec = tcpSet.tread;
+		err = lwip_setsockopt(socket, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv));
 		memset(buffer, 0, MAX_LEN_TCP_MESSAGE);
-		len = recv(socket, buffer, MAX_LEN_TCP_MESSAGE-1, 0);
+		readSocket(socket, buffer, MAX_LEN_TCP_MESSAGE);
+		len=strlen(buffer);
 		if (len < 1) {
-			DeviceLog(SUB_TRANSPORT, "FromServerGPRS Ошибка чтения ");
+			Debug_Message(LOG_ERROR, "%s Ошибка чтения ",name);
 			BadGPRS(buffer, socket, GPRSFromServerQueue);
+			vPortFree(buffer);
 			return;
 		}
-		if (buffer[len - 1] != '\n') {
-			DeviceLog(SUB_TRANSPORT, "FromServerGPRS Неверное завершение строки %.20s", buffer);
-			BadGPRS(buffer, socket, GPRSFromServerQueue);
-			return;
-		}
-		setGoodGPRS(1);
-		setFromServerGPRSStart(1);
+		setGoodGPRS(true);
+		setToServerGPRSStart(true);
+		Debug_Message(LOG_INFO, "%s принял %.20s",name, buffer);
 		buffer[len - 1] = 0;
 		MessageFromQueue msg;
 		msg.message = buffer;
@@ -93,35 +81,23 @@ void FromServerGPRSLoop(void) {
 		osMessageQueuePut(GPRSFromServerQueue, &msg, 0, 0);
 		int count = toque;
 		while (osMessageQueueGet(GPRSToServerQueue, &msg, NULL, STEP_CONTROL) != osOK) {
-			if (--count < 0 || !isGoodGPRS() || isGoodTCP()) {
-				DeviceLog(SUB_TRANSPORT, "FromServerGPRS Таймаут или сброс");
+			if (--count < 0 || !isGoodGPRS()) {
+				Debug_Message(LOG_ERROR, "%s Таймаут или сброс",name);
 				BadGPRS(buffer, socket, GPRSFromServerQueue);
 				return;
 			}
 		}
-		if (msg.error == TRANSPORT_STOP) {
-			DeviceLog(SUB_TRANSPORT, "FromServerGPRS Приказали остановиться");
-			BadGPRS(buffer, socket, GPRSFromServerQueue);
-			return;
-		}
-		int len = strlen(msg.message);
-		buffer = pvPortMalloc(len + 2);
-		if(buffer==NULL){
-			DeviceLog(SUB_TRANSPORT, "FromServerGPRS Нет памяти");
-			BadGPRS(buffer, socket, GPRSFromServerQueue);
-			return;
-		}
-		memcpy(buffer,msg.message,len);
-		vPortFree(msg.message);
-		buffer[len] = '\n';
-		buffer[len + 1] = 0;
+		len = strlen(msg.message);
+		msg.message[len] = '\n';
+		msg.message[len + 1] = 0;
 		err = send(socket, buffer, strlen(buffer), 0);
 		if (err < 0) {
-			DeviceLog(SUB_TRANSPORT, "FromServerGPRS Не смог передать строку ответа %.20s", buffer);
+			Debug_Message(LOG_ERROR, "%s Не смог передать строку ответа %.20s",name, msg.message);
 			BadGPRS(buffer, socket, GPRSFromServerQueue);
+			vPortFree(msg.message);
 			return;
 		}
-		vPortFree(buffer);
-		osDelay(100);
+		Debug_Message(LOG_INFO, "%s передал %.20s", name,msg.message);
+		vPortFree(msg.message);
 	}
 }

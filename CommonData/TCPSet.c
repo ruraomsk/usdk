@@ -16,7 +16,7 @@ void clearTCPSet(TCPSet *t) {
 	t->port=2093;
 	t->tread=1;
 	t->twrite=1;
-	t->tque=30;
+	t->tque=300;
 }
 
 char* TCPSetToJsonString(TCPSet *t,size_t size){

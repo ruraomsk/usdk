@@ -14,77 +14,81 @@
  *
  *
 */
-
+#include "CommonData.h"
 #include "Transport.h"
 #include "DebugLogger.h"
 #include "DeviceLogger.h"
+#include "service.h"
 #include "core_json.h"
 #include <stdbool.h>
-extern osMessageQueueId_t MainChangeStatus;
-extern osMessageQueueId_t MainToServerQueue;
-extern osMessageQueueId_t MainFromServerQueue;
-extern osMessageQueueId_t MainToServerSecQueue;
-extern osMessageQueueId_t MainFromServerSecQueue;
+#include <string.h>
+#include <strings.h>
+extern osMessageQueueId_t ChangeStatus;
+extern osMessageQueueId_t ToServerQueue;
+extern osMessageQueueId_t FromServerQueue;
+extern osMessageQueueId_t ToServerSecQueue;
+extern osMessageQueueId_t FromServerSecQueue;
 
 MessageFromQueue from;
 MessageFromQueue to;
 bool mainConnect=false;
 bool secConnect=false;
 int tout=10;
-char* MessageOk (){
-	js_write w;
-	js_write_start(&w, 120);
-	js_write_value_start(&w, "confirm");
-	js_write_bool(&w, "status", true);
-	js_write_string(&w, "error", "No error");
-	js_write_value_end(&w);
-	js_write_end(&w);
-	return w.start;
-}
+char rString[80];
+int interval=-1;
+bool controlInterbal=false;
+int count=-1;
+#define MESSAGE_OK "ok"
+#define GIVE_ME_STATUS "give_me_status"
 void TechExchange(void *argument){
-
 	for(;;){
-		osDelay(100);
-		if (osMessageQueueGet(MainFromServerQueue, &from, NULL, tout) == osOK) {
+		vTaskDelay(100);
+		if (osMessageQueueGet(FromServerQueue, &from, NULL, tout) == osOK) {
 			if (from.error != TRANSPORT_OK) {
 				//Сообщение с ошибкой нужно начинать заново
+				Debug_Message(LOG_ERROR, "Обмен по основному каналу прекращен");
 				mainConnect=false;
-				vPortFree(from.message);
 				continue;
 			}
 			if(!mainConnect){
 				//Должно быть сообщения коннекта
-				js_read r,v;
-				js_read_start(&r, from.message);
-				if (js_read_value(&r, "connect", &v)==JsonSuccess){
+				if (strncmp(MESSAGE_OK,from.message,strlen(MESSAGE_OK))==0){
+					mainConnect=true;
 					to.error=TRANSPORT_OK;
-					to.message=MessageOk();
-					osMessageQueuePut(MainToServerQueue, &to, 0, 0);
+					to.message=MessageConfirm();
+					osMessageQueuePut(ToServerQueue, &to, 0, 0);
+
 				}
+				vPortFree(from.message);
+				continue;
 			}
-			vPortFree(from.message);
-			continue;
+			if (strncmp(GIVE_ME_STATUS,from.message,strlen(GIVE_ME_STATUS))==0){
+				to.message=MessageStatusDevice();
+				osMessageQueuePut(ToServerQueue, &to, 0, 0);
+				vPortFree(from.message);
+				continue;
+			}
 		}
-		if (osMessageQueueGet(MainFromServerSecQueue, &from, NULL, tout) == osOK) {
+		if (osMessageQueueGet(FromServerSecQueue, &from, NULL, tout) == osOK) {
 			if (from.error != TRANSPORT_OK) {
 //				Сообщение с ошибкой нужно начинать заново
+				Debug_Message(LOG_ERROR, "Обмен по второму каналу прекращен");
 				secConnect=false;
-				vPortFree(from.message);
 				continue;
 			}
 			if(!secConnect){
 				//Должно быть сообщения коннекта
-				js_read r,v;
-				js_read_start(&r, from.message);
-				if (js_read_value(&r, "connect", &v)==JsonSuccess){
-//					to.error=TRANSPORT_OK;
-//					to.message=MessageOk();
-//					osMessagePut(MainToServerSecQueue, &to, 0,0);
+				if (strncmp(MESSAGE_OK,from.message,strlen(MESSAGE_OK))==0){
+					mainConnect=true;
+					to.error=TRANSPORT_OK;
+					to.message=MessageConfirm();
+					osMessageQueuePut(ToServerQueue, &to, 0, 0);
 
 				}
+				vPortFree(from.message);
+				continue;
 			}
-			vPortFree(from.message);
-			continue;
+//			doSecondMessage(from);
 		}
 
 

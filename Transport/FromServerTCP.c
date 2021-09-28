@@ -5,10 +5,10 @@
 #include "sockets.h"
 #include "CommonData.h"
 
-extern osMessageQueueId_t ToServerQueue;
-extern osMessageQueueId_t FromServerQueue;
-char small[64];
+extern osMessageQueueId_t ETHToServerQueue;
+extern osMessageQueueId_t ETHFromServerQueue;
 void FromServerTCPLoop(void) {
+	char name[]="FromServerTCP";
 	int socket = -1;
 	char *buffer = NULL;
 	TCPSet tcpSet;
@@ -20,8 +20,8 @@ void FromServerTCPLoop(void) {
 	srv_addr.sin_port = htons(tcpSet.port);
 	socket = socket(AF_INET, SOCK_STREAM, 0);
 	if (socket < 0) {
-		DeviceLog(SUB_TRANSPORT, "FromServerTCP Не могу создать сокет %d", errno);
-		BadTCP(buffer, socket, FromServerQueue);
+		Debug_Message(LOG_ERROR,"%s Не могу создать сокет %d",name, errno);
+		BadTCP(buffer, socket, ETHFromServerQueue);
 		return;
 	}
 	//Устанавливаем тайм ауты
@@ -34,9 +34,8 @@ void FromServerTCPLoop(void) {
 	toque = toque / STEP_CONTROL;
 	err = connect(socket, (struct sockaddr* ) &srv_addr, sizeof(struct sockaddr_in));
 	if (err != 0) {
-		Debug_Message(LOG_ERROR, "FromServerTCP %s:%d %d",tcpSet.ip,tcpSet.port,errno);
-		DeviceLog(SUB_TRANSPORT, "FromServerTCP Нет соединения с сервером по основному каналу");
-		BadTCP(buffer, socket, FromServerQueue);
+		Debug_Message(LOG_ERROR, "%s Нет соединения с сервером по основному каналу",name);
+		BadTCP(buffer, socket, ETHFromServerQueue);
 		return;
 	}
 	buffer = makeConnectString(MAX_LEN_TCP_MESSAGE, "ETH");
@@ -45,56 +44,59 @@ void FromServerTCPLoop(void) {
 	buffer [ len + 1 ] = 0;
 	err = send(socket, buffer, strlen(buffer), 0);
 	if (err < 0) {
-		DeviceLog(SUB_TRANSPORT, "FromServerTCP Не смог передать строку %.20s", buffer);
-		BadTCP(buffer, socket, FromServerQueue);
+		Debug_Message(LOG_ERROR, "%s Не смог передать строку %.20s",name, buffer);
+		BadTCP(buffer, socket, ETHFromServerQueue);
 		return;
 	}
 	vPortFree(buffer);
+
 	for (;;) {
 		buffer = pvPortMalloc(MAX_LEN_TCP_MESSAGE);
 		if (buffer == NULL) {
-			DeviceLog(SUB_TRANSPORT, "FromServerTCP Нет памяти");
-			BadTCP(buffer, socket, FromServerQueue);
+			Debug_Message(LOG_ERROR, "%s Нет памяти",name);
+			BadTCP(buffer, socket, ETHFromServerQueue);
 			return;
 		}
-		readSocket(socket, buffer, MAX_LEN_TCP_MESSAGE);
-		if (strlen(buffer) < 1) {
-			DeviceLog(SUB_TRANSPORT, "FromServerTCP Ошибка чтения ");
-			BadTCP(buffer, socket, FromServerQueue);
-			return;
-		}
+		GetCopy("cmain", &tcpSet);
 		tv.tv_sec = tcpSet.tread;
 		err = lwip_setsockopt(socket, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv));
-		setFromServerTCPStart(1);
-		setGoodTCP(1);
-		Debug_Message(LOG_INFO, "FromServerTCP принял %.20s", buffer);
+		memset(buffer,0,MAX_LEN_TCP_MESSAGE);
+//		readSocket(socket, buffer, MAX_LEN_TCP_MESSAGE);
+		recv(socket, buffer, MAX_LEN_TCP_MESSAGE,0);
+		len=strlen(buffer);
+		if (len < 1) {
+			Debug_Message(LOG_ERROR, "%s Ошибка чтения ",name);
+			BadTCP(buffer, socket, ETHFromServerQueue);
+			vPortFree(buffer);
+			return;
+		}
+		setToServerTCPStart(true);
+		setGoodTCP(true);
+		Debug_Message(LOG_INFO, "%s принял %.20s",name, buffer);
 		buffer [ len - 1 ] = 0;
 		MessageFromQueue msg;
 		msg.message = buffer;
 		msg.error = TRANSPORT_OK;
-		osMessageQueuePut(FromServerQueue, &msg, 0, 0);
+		osMessageQueuePut(ETHFromServerQueue, &msg, 0, 0);
 		int count = toque;
-		while (osMessageQueueGet(ToServerQueue, &msg, NULL, STEP_CONTROL) != osOK) {
+		while (osMessageQueueGet(ETHToServerQueue, &msg, NULL, STEP_CONTROL) != osOK) {
 			if (--count < 0 || !isGoodTCP()) {
-				DeviceLog(SUB_TRANSPORT, "FromServerTCP Таймаут или сброс");
-				BadTCP(buffer, socket, FromServerQueue);
+				Debug_Message(LOG_ERROR, "%s Таймаут или сброс",name);
+				BadTCP(buffer, socket, ETHFromServerQueue);
 				return;
 			}
 		}
-		if(msg.error!=TRANSPORT_OK){
-			DeviceLog(SUB_TRANSPORT, "FromServerTCP Приказ остановиться");
-			BadTCP(buffer, socket, FromServerQueue);
-			return;
-		}
+		len=strlen(msg.message);
 		msg.message [ len ] = '\n';
 		msg.message [ len + 1 ] = 0;
 		err = send(socket, msg.message, strlen(msg.message), 0);
 		if (err < 0) {
-			DeviceLog(SUB_TRANSPORT, "FromServerTCP Не смог передать строку ответа %.20s", buffer);
-			BadTCP(buffer, socket, FromServerQueue);
+			Debug_Message(LOG_ERROR, "%s Не смог передать строку ответа %.20s",name,msg.message);
+			BadTCP(buffer, socket, ETHFromServerQueue);
+			vPortFree(msg.message);
 			return;
 		}
-		Debug_Message(LOG_INFO, "FromServerTCP передал %.20s", msg.message);
+		Debug_Message(LOG_INFO, "%s передал %.20s", name,msg.message);
 		vPortFree(msg.message);
 	}
 }

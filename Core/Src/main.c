@@ -416,7 +416,7 @@ void StartTCPTransport(void *argument)
   /* USER CODE BEGIN StartTCPTransport */
   /* Infinite loop */
 	while (!ReadyFiles) {
-		osDelay(100);
+		osDelay(1000);
 	}
 	while(1){
 		DeviceLog(SUB_TRANSPORT, "Запускаем Transport");

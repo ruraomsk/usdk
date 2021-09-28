@@ -13,17 +13,17 @@
 #include "CommonData.h"
 //DeviceStatus deviceStatus;
 
-int GPRSNeed = 0;			//Готовность работы GPRS если есть
-int FromServerTCPStart = 0;
-int FromServerGPRSStart = 0;
-ErrorTransport TCPError = 0;
-ErrorTransport GPRSError = 0;
+bool GPRSNeed = false;			//Готовность работы GPRS если есть
+bool ToServerTCPStart = false;
+bool ToServerGPRSStart = false;
+bool TCPError = false;
+bool GPRSError = false;
 
 //Очереди для Ethernet
-osMessageQueueId_t ToServerQueue;
-osMessageQueueId_t FromServerQueue;
-osMessageQueueId_t ToServerSecQueue;
-osMessageQueueId_t FromServerSecQueue;
+osMessageQueueId_t ETHToServerQueue;
+osMessageQueueId_t ETHFromServerQueue;
+osMessageQueueId_t ETHToServerSecQueue;
+osMessageQueueId_t ETHFromServerSecQueue;
 
 //Очереди для GPRS
 osMessageQueueId_t GPRSToServerQueue;
@@ -32,89 +32,80 @@ osMessageQueueId_t GPRSToServerSecQueue;
 osMessageQueueId_t GPRSFromServerSecQueue;
 
 //Очереди от основной программы управления
-osMessageQueueId_t MainChangeStatus;
-osMessageQueueId_t MainToServerQueue;
-osMessageQueueId_t MainFromServerQueue;
-osMessageQueueId_t MainToServerSecQueue;
-osMessageQueueId_t MainFromServerSecQueue;
+osMessageQueueId_t ChangeStatus;
+osMessageQueueId_t ToServerQueue;
+osMessageQueueId_t FromServerQueue;
+osMessageQueueId_t ToServerSecQueue;
+osMessageQueueId_t FromServerSecQueue;
 
 osMutexId_t TransportMutex;
 /* Definitions for ToServerTCP */
 osThreadId_t ToServerTCPHandle;
-const osThreadAttr_t ToServerTCP_attributes = { .name = "ToTCP",
-		.stack_size = 256 * 4, .priority = (osPriority_t) osPriorityNormal, };
+const osThreadAttr_t ToServerTCP_attributes = { .name = "ToTCP", .stack_size = 256 * 4, .priority =
+		(osPriority_t) osPriorityLow, };
 /* Definitions for FromServerTCP */
 osThreadId_t FromServerTCPHandle;
-const osThreadAttr_t FromServerTCP_attributes = { .name = "FromTCP",
-		.stack_size = 256 * 4, .priority = (osPriority_t) osPriorityNormal, };
+const osThreadAttr_t FromServerTCP_attributes = { .name = "FromTCP", .stack_size = 256 * 4, .priority =
+		(osPriority_t) osPriorityLow, };
 /* Definitions for ToServerGPRS */
 osThreadId_t ToServerGPRSHandle;
-const osThreadAttr_t ToServerGPRS_attributes = { .name = "ToGPRS",
-		.stack_size = 256*4 , .priority = (osPriority_t) osPriorityNormal, };
+const osThreadAttr_t ToServerGPRS_attributes = { .name = "ToGPRS", .stack_size = 256 * 4, .priority =
+		(osPriority_t) osPriorityLow, };
 /* Definitions for FromServerGPRS */
 osThreadId_t FromServerGPRSHandle;
-const osThreadAttr_t FromServerGPRS_attributes = { .name = "FromGPRS",
-		.stack_size = 256 * 4, .priority = (osPriority_t) osPriorityNormal, };
+const osThreadAttr_t FromServerGPRS_attributes = { .name = "FromGPRS", .stack_size = 256 * 4, .priority =
+		(osPriority_t) osPriorityLow, };
 
 osThreadId_t TechExchHandle;
-const osThreadAttr_t TechExch_attributes = { .name = "TechExch",
-		.stack_size = 256 * 4, .priority = (osPriority_t) osPriorityNormal, };
+const osThreadAttr_t TechExch_attributes = { .name = "TechExch", .stack_size = 256 * 4, .priority =
+		(osPriority_t) osPriorityLow, };
 
 #define tout 10
+
+DeviceStatus devStatus;
+
 void startGPRS() {
-	MessageFromQueue msg;
 	int c = 1;
-	DeviceStatus devStatus;
-	GetCopy("setup", &devStatus);
 	if (!devStatus.Gprs) return;
-	msg.error = TRANSPORT_STOP;
-	osMessageQueuePut(ToServerQueue, &msg, 0, 0);
-	osMessageQueuePut(ToServerSecQueue, &msg, 0, 0);
-	osMessageQueuePut(MainChangeStatus, &c, 0, 0);
-	DeviceLog(SUB_TRANSPORT, "Переключились с ETH на GPRS");
-	setGPRSNeed(1);
+	osMessageQueuePut(ChangeStatus, &c, 0, 0);
+	Debug_Message(LOG_INFO, "Переключились с ETH на GPRS");
+	setGPRSNeed(true);
 }
 void stopGPRS() {
-	MessageFromQueue msg;
 	int c = 0;
-	DeviceStatus devStatus;
-	GetCopy("setup", &devStatus);
 	if (!devStatus.Gprs) return;
-	msg.error = TRANSPORT_STOP;
-	osMessageQueuePut(GPRSToServerQueue, &msg, 0, 0);
-	osMessageQueuePut(GPRSToServerSecQueue, &msg, 0, 0);
-	osMessageQueuePut(MainChangeStatus, &c, 0, 0);
-	DeviceLog(SUB_TRANSPORT, "Переключились с GPRS на ETH");
-	setGPRSNeed(0);
+	osMessageQueuePut(ChangeStatus, &c, 0, 0);
+	Debug_Message(LOG_INFO, "Переключились с GPRS на ETH");
+	setGoodGPRS(false);
+	setGPRSNeed(false);
 
 }
 void noETHandGPRS() {
 	MessageFromQueue msg;
 	int c = -1;
-	osMessageQueuePut(MainChangeStatus, &c, 0, 0);
-	DeviceLog(SUB_TRANSPORT, "Нет устройств связи");
+	setGoodGPRS(false);
+	setGoodTCP(false);
+	osMessageQueuePut(ChangeStatus, &c, 0, 0);
+	Debug_Message(LOG_INFO, "Нет устройств связи");
 	for (;;) {
-		if (osMessageQueueGet(MainToServerQueue, &msg, NULL, tout) == osOK) {
+		if (osMessageQueueGet(ToServerQueue, &msg, NULL, tout) == osOK) {
 			DeviceLog(SUB_TRANSPORT, "Пришло сообщение на главный ");
-			MessageFromQueue ms;
-			ms.error = TRANSPORT_STOP;
-			osMessageQueuePut(MainFromServerQueue, &ms, 0, 0);
+			vPortFree(msg.message);
 		}
-		if (osMessageQueueGet(MainToServerSecQueue, &msg, NULL, tout) == osOK) {
+		if (osMessageQueueGet(ToServerSecQueue, &msg, NULL, tout) == osOK) {
 			DeviceLog(SUB_TRANSPORT, "Пришло сообщение на второй ");
-			MessageFromQueue ms;
-			ms.error = TRANSPORT_STOP;
-			osMessageQueuePut(MainFromServerSecQueue, &ms, 0, 0);
+			vPortFree(msg.message);
 		}
 	}
 }
 void StartToServerTCP(void *argument) {
 	while (1) {
-		while (FromServerTCPStart == 0) {
-			osDelay(10);
+		while (!ToServerTCPStart) {
+			osDelay(1000);
 		}
 		Debug_Message(LOG_INFO, "Запускаем ToServerTCP");
 		ToServerTCPLoop();
+		setGoodTCP(false);
 		Debug_Message(LOG_INFO, "остановился ToServerTCP");
 		osDelay(STEP_TCP);
 
@@ -124,7 +115,8 @@ void StartFromServerTCP(void *argument) {
 	while (1) {
 		Debug_Message(LOG_INFO, "Запускаем FromServerTCP");
 		FromServerTCPLoop();
-		setFromServerTCPStart(0);
+		setToServerTCPStart(false);
+		setGoodTCP(false);
 		Debug_Message(LOG_INFO, "остановился FromServerTCP");
 		osDelay(STEP_TCP);
 
@@ -132,28 +124,27 @@ void StartFromServerTCP(void *argument) {
 }
 void StartToServerGPRS(void *argument) {
 	while (1) {
-		while (GPRSNeed == 0 || FromServerGPRSStart == 0) {
-			osDelay(10);
+		while (!GPRSNeed || !ToServerGPRSStart) {
+			osDelay(1000);
 		}
 		Debug_Message(LOG_INFO, "Запускаем ToServerGPRS");
 		ToServerGPRSLoop();
+		setGoodGPRS(false);
 		Debug_Message(LOG_INFO, "остановился ToServerGPRS");
 		osDelay(STEP_GPRS);
-
 	}
 }
 
 void StartFromServerGPRS(void *argument) {
 	while (1) {
-		while (GPRSNeed == 0) {
-//			Debug_Message(LOG_INFO, "Wait FromServerGPRS");
-
-			osDelay(100);
+		while (!GPRSNeed) {
+			osDelay(1000);
 		}
 		Debug_Message(LOG_INFO, "Запускаем FromServerGPRS");
 		FromServerGPRSLoop();
+		setToServerGPRSStart(false);
+		setGoodGPRS(false);
 		Debug_Message(LOG_INFO, "остановился FromServerGPRS");
-		setFromServerGPRSStart(0);
 		osDelay(STEP_GPRS);
 
 	}
@@ -161,62 +152,61 @@ void StartFromServerGPRS(void *argument) {
 
 void mainTransportLoop(void) {
 	TransportMutex = osMutexNew(NULL);
-	ToServerQueue = osMessageQueueNew(6, sizeof(MessageFromQueue), NULL);
-	FromServerQueue = osMessageQueueNew(6, sizeof(MessageFromQueue), NULL);
-	ToServerSecQueue = osMessageQueueNew(6, sizeof(MessageFromQueue), NULL);
-	FromServerSecQueue = osMessageQueueNew(6, sizeof(MessageFromQueue), NULL);
+	ETHToServerQueue = osMessageQueueNew(6, sizeof(MessageFromQueue), NULL);
+	ETHFromServerQueue = osMessageQueueNew(6, sizeof(MessageFromQueue), NULL);
+	ETHToServerSecQueue = osMessageQueueNew(6, sizeof(MessageFromQueue), NULL);
+	ETHFromServerSecQueue = osMessageQueueNew(6, sizeof(MessageFromQueue), NULL);
 
 	GPRSToServerQueue = osMessageQueueNew(6, sizeof(MessageFromQueue), NULL);
 	GPRSFromServerQueue = osMessageQueueNew(6, sizeof(MessageFromQueue), NULL);
 	GPRSToServerSecQueue = osMessageQueueNew(6, sizeof(MessageFromQueue),
-			NULL);
+	NULL);
 	GPRSFromServerSecQueue = osMessageQueueNew(6, sizeof(MessageFromQueue),
-			NULL);
+	NULL);
 
-	MainToServerQueue = osMessageQueueNew(6, sizeof(MessageFromQueue), NULL);
-	MainFromServerQueue = osMessageQueueNew(6, sizeof(MessageFromQueue), NULL);
-	MainToServerSecQueue = osMessageQueueNew(6, sizeof(MessageFromQueue),
-			NULL);
-	MainFromServerSecQueue = osMessageQueueNew(6, sizeof(MessageFromQueue),
-			NULL);
+	ToServerQueue = osMessageQueueNew(6, sizeof(MessageFromQueue), NULL);
+	FromServerQueue = osMessageQueueNew(6, sizeof(MessageFromQueue), NULL);
+	ToServerSecQueue = osMessageQueueNew(6, sizeof(MessageFromQueue),
+	NULL);
+	FromServerSecQueue = osMessageQueueNew(6, sizeof(MessageFromQueue),
+	NULL);
 
 	//0 - Переход от GPRS на Ethernet
 	//1 - Переход от Ethernet на GPRS
 	//-1 - Нет связи с внешним миром
-// Временно длдя отладки
-	TCPSet mainTCP,secTCP;
-	GetCopy("cmain",&mainTCP);
-	mainTCP.tread=300;
-	mainTCP.twrite=3;
+// Временно для отладки
+	TCPSet mainTCP, secTCP;
+	GetCopy("cmain", &mainTCP);
+	mainTCP.tread = 300;
+	mainTCP.twrite = 10;
 	SetCopy("cmain", &mainTCP);
-	GetCopy("csec",&secTCP);
-	secTCP.tread=3;
-	secTCP.twrite=3;
+	GetCopy("csec", &secTCP);
+	secTCP.tread = 10;
+	secTCP.twrite = 10;
+	secTCP.port = 2094;
 	SetCopy("csec", &secTCP);
-	MainChangeStatus = osMessageQueueNew(6, sizeof(int), NULL);
-	DeviceStatus devStatus;
+	ChangeStatus = osMessageQueueNew(6, sizeof(int), NULL);
 	GetCopy("setup", &devStatus);
-	if (devStatus.Ethertnet){
+	if (!devStatus.Ethertnet && devStatus.Gprs) setGPRSNeed(true);
+
+	if (devStatus.Ethertnet) {
+		setGoodTCP(true);
 		/* creation of FromServerTCP */
-		FromServerTCPHandle = osThreadNew(StartFromServerTCP, NULL,
-				&FromServerTCP_attributes);
+		FromServerTCPHandle = osThreadNew(StartFromServerTCP, NULL, &FromServerTCP_attributes);
 
 		/* creation of ToServerTCP */
-//		ToServerTCPHandle = osThreadNew(StartToServerTCP, NULL,
-//				&ToServerTCP_attributes);
+//		ToServerTCPHandle = osThreadNew(StartToServerTCP, NULL, &ToServerTCP_attributes);
 	}
-	if (devStatus.Gprs){
+	if (devStatus.Gprs) {
+		setGoodGPRS(true);
 		/* creation of FromServerGPRS */
-//		FromServerGPRSHandle = osThreadNew(StartFromServerGPRS, NULL,
-//				&FromServerGPRS_attributes);
-//
-//		/* creation of ToServerGPRS */
-//		ToServerGPRSHandle = osThreadNew(StartToServerGPRS, NULL,
-//				&ToServerGPRS_attributes);
+		FromServerGPRSHandle = osThreadNew(StartFromServerGPRS, NULL, &FromServerGPRS_attributes);
+
+		/* creation of ToServerGPRS */
+		ToServerGPRSHandle = osThreadNew(StartToServerGPRS, NULL, &ToServerGPRS_attributes);
 	}
 
-	TechExchHandle = osThreadNew(TechExchange, NULL,
-			&TechExch_attributes);
+	TechExchHandle = osThreadNew(TechExchange, NULL, &TechExch_attributes);
 
 	if (!devStatus.Ethertnet && !devStatus.Gprs) {
 		noETHandGPRS();
@@ -224,63 +214,71 @@ void mainTransportLoop(void) {
 
 	MessageFromQueue msg;
 	for (;;) {
-		osDelay(250);
+		osDelay(10);
 		//Вначале проверяем ответы по Ethernet
-		if (osMessageQueueGet(FromServerQueue, &msg, NULL, tout) == osOK) {
-			if (msg.error == TRANSPORT_OK) {
-				if (GPRSNeed == 1) {
-					//Работали по GPRS нужно его остановить и перейти на Ethernet
-					stopGPRS();
+		if (devStatus.Ethertnet) {
+			if (osMessageQueueGet(ETHFromServerQueue, &msg, NULL, tout) == osOK) {
+				if (msg.error == TRANSPORT_OK) {
+					if (isGoodGPRS()) {
+						//Работали по GPRS нужно его остановить и перейти на Ethernet
+						stopGPRS();
+					}
+					osMessageQueuePut(FromServerQueue, &msg, 0, 0);
+				} else {
+					//Работали по Ethernet нужно запустить GPRS
+					startGPRS();
 				}
-				osMessageQueuePut(MainFromServerQueue, &msg, 0, 0);
-			} else {
-				if (GPRSNeed == 0) {
+			}
+			if (osMessageQueueGet(ETHFromServerSecQueue, &msg, NULL, tout) == osOK) {
+				if (msg.error == TRANSPORT_OK) {
+					if (isGoodGPRS()) {
+						//Работали по GPRS нужно его остановить и перейти на Ethernet
+						stopGPRS();
+					}
+					osMessageQueuePut(FromServerSecQueue, &msg, 0, 0);
+				} else {
 					//Работали по Ethernet нужно запустить GPRS
 					startGPRS();
 				}
 			}
 		}
-		if (osMessageQueueGet(FromServerSecQueue, &msg, NULL, tout) == osOK) {
-			if (msg.error == TRANSPORT_OK) {
-				if (GPRSNeed == 1) {
-					//Работали по GPRS нужно его остановить и перейти на Ethernet
-					stopGPRS();
-				}
-				osMessageQueuePut(MainFromServerSecQueue, &msg, 0, 0);
-			} else {
-				if (GPRSNeed == 0) {
-					//Работали по Ethernet нужно запустить GPRS
-					startGPRS();
-				}
-			}
-		}
-		if (GPRSNeed == 1) {
+		if (devStatus.Gprs) {
 			//Вычитываем и пробрасываем сообщения от GPRS
-			if (osMessageQueueGet(GPRSFromServerQueue, &msg, NULL, tout)
-					== osOK) {
-				osMessageQueuePut(MainFromServerQueue, &msg, 0, 0);
+			if (osMessageQueueGet(GPRSFromServerQueue, &msg, NULL, tout) == osOK) {
+				if (msg.error == TRANSPORT_OK) {
+					Debug_Message(LOG_INFO, "Перенесли из GPRS в основную %.20s", msg.message);
+				}
+				osMessageQueuePut(FromServerQueue, &msg, 0, 0);
 			}
-			if (osMessageQueueGet(GPRSFromServerSecQueue, &msg, NULL, tout)
-					== osOK) {
-				osMessageQueuePut(MainFromServerSecQueue, &msg, 0, 0);
+			if (osMessageQueueGet(GPRSFromServerSecQueue, &msg, NULL, tout) == osOK) {
+				if (msg.error == TRANSPORT_OK) {
+					Debug_Message(LOG_INFO, "Перенесли из GPRS во вторую %.20s", msg.message);
+				}
+				osMessageQueuePut(FromServerSecQueue, &msg, 0, 0);
 			}
-		} else {
-			//Вычитываем и отбрасываем сообщения от GPRS
-			osMessageQueueGet(GPRSFromServerQueue, &msg, NULL, tout);
-			osMessageQueueGet(GPRSFromServerSecQueue, &msg, NULL, tout);
 		}
 		// Пересылаем сообщения от главного модуля
-		if (osMessageQueueGet(MainToServerQueue, &msg, NULL, tout) == osOK) {
-			if (GPRSNeed == 0)
-				osMessageQueuePut(ToServerQueue, &msg, 0, 0);
-			else
+		if (osMessageQueueGet(ToServerQueue, &msg, NULL, tout) == osOK) {
+			if (isGoodTCP())
+				osMessageQueuePut(ETHToServerQueue, &msg, 0, 0);
+			else if (isGoodGPRS()) {
 				osMessageQueuePut(GPRSToServerQueue, &msg, 0, 0);
+				Debug_Message(LOG_INFO, "Перенесли из основной в GPRS  %.20s", msg.message);
+			} else {
+				Debug_Message(LOG_INFO, "Придется удалить %.20s", msg.message);
+				vPortFree(msg.message);
+			}
 		}
-		if (osMessageQueueGet(MainToServerSecQueue, &msg, NULL, tout) == osOK) {
-			if (GPRSNeed == 0)
-				osMessageQueuePut(ToServerSecQueue, &msg, 0, 0);
-			else
+		if (osMessageQueueGet(ToServerSecQueue, &msg, NULL, tout) == osOK) {
+			if (isGoodTCP())
+				osMessageQueuePut(ETHToServerSecQueue, &msg, 0, 0);
+			else if (isGoodGPRS()) {
 				osMessageQueuePut(GPRSToServerSecQueue, &msg, 0, 0);
+				Debug_Message(LOG_INFO, "Перенесли из второй в GPRS  %.20s", msg.message);
+			} else {
+				Debug_Message(LOG_INFO, "Придется удалить %.20s", msg.message);
+				vPortFree(msg.message);
+			}
 		}
 	}
 }
