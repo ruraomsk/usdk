@@ -56,7 +56,7 @@ void ToServerGPRSLoop(void) {
 		return;
 	}
 	memset(buffer, 0, MAX_LEN_TCP_MESSAGE);
-	readSocket(socket, buffer, MAX_LEN_TCP_MESSAGE);
+	recv(socket, buffer, MAX_LEN_TCP_MESSAGE,0);
 	len=strlen(buffer);
 	if (len < 1) {
 		Debug_Message(LOG_ERROR, "%s Ошибка чтения ",name);
@@ -64,31 +64,36 @@ void ToServerGPRSLoop(void) {
 		vPortFree(buffer);
 		return;
 	}
-	buffer [ len - 1 ] = 0;
+	deleteEnter(buffer);
 	msg.message = buffer;
 	msg.error = TRANSPORT_OK;
 	Debug_Message(LOG_INFO, "%s принял %.20s",name, msg.message);
 	osMessageQueuePut(GPRSFromServerSecQueue, &msg, 0, 0);
+	buffer=NULL;
 	for (;;) {
+		GetCopy("csec", &tcpSet);
+		toque = (uint32_t) tcpSet.tque * 1000U;
+		toque = toque / STEP_CONTROL;
 		int count = toque;
-		while (osMessageQueueGet(GPRSToServerSecQueue, &msg, NULL, toque) != osOK) {
+		while (osMessageQueueGet(GPRSToServerSecQueue, &msg, NULL, STEP_CONTROL/2) != osOK) {
 			if (--count < 0 || !isGoodGPRS()) {
 				BadGPRS(buffer, socket, GPRSFromServerSecQueue);
 				return;
 			}
+//			if (count%10==0) Debug_Message(LOG_INFO, "%s ждем %d", name,count);
+			osDelay(STEP_CONTROL/2);
 		}
 		int len = strlen(msg.message);
 		msg.message[ len ] = '\n';
 		msg.message[ len + 1 ] = 0;
-		err = send(socket, buffer, strlen(msg.message), 0);
+		err = send(socket, msg.message, strlen(msg.message), 0);
 		if (err < 0) {
-			Debug_Message(LOG_ERROR, "%s Не смог передать строку %.20s",name, buffer);
+			Debug_Message(LOG_ERROR, "%s Не смог передать строку %.20s",name, msg.message);
 			BadGPRS(buffer, socket, GPRSFromServerSecQueue);
 			vPortFree(msg.message);
 			return;
 		}
 		Debug_Message(LOG_INFO, "%s передал %.20s",name, msg.message);
-		vPortFree(buffer);
 		buffer = pvPortMalloc(MAX_LEN_TCP_MESSAGE);
 		if (buffer == NULL) {
 			Debug_Message(LOG_ERROR, "%s Нет памяти",name);
@@ -96,7 +101,7 @@ void ToServerGPRSLoop(void) {
 			return;
 		}
 		memset(buffer, 0, MAX_LEN_TCP_MESSAGE);
-		readSocket(socket, buffer, MAX_LEN_TCP_MESSAGE);
+		recv(socket, buffer, MAX_LEN_TCP_MESSAGE,0);
 		len=strlen(buffer);
 		if (len < 1) {
 			Debug_Message(LOG_ERROR, "%s Ошибка чтения ",name);
@@ -104,10 +109,11 @@ void ToServerGPRSLoop(void) {
 			vPortFree(buffer);
 			return;
 		}
-		buffer [ len - 1 ] = 0;
+		deleteEnter(buffer);
 		msg.message = buffer;
 		msg.error = TRANSPORT_OK;
 		Debug_Message(LOG_INFO, "%s принял %.20s", name,msg.message);
 		osMessageQueuePut(GPRSFromServerSecQueue, &msg, 0, 0);
+		buffer=NULL;
 	}
 }

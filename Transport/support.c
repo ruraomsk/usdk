@@ -7,7 +7,7 @@
 
 #include <sockets.h>
 #include <stdlib.h>
-
+#include <string.h>
 #include "Transport.h"
 #include "Files.h"
 #include "core_json.h"
@@ -19,30 +19,12 @@ extern int ToServerTCPStart;
 extern int ToServerGPRSStart;
 extern osMutexId_t TransportMutex;
 
-void readSocket(int socket, char *buffer, size_t size) {
-	int exit = 0;
-	char *pos = buffer;
-	memset(buffer, 0, size);
-	while (1) {
-		if (size-(pos-buffer)<=0) {
-			buffer[size-1]=0;
-			return;
-		}
-		int l = read(socket, pos, size - (pos - buffer));
-		if (l <= 0) return;
-		if (pos [ l - 1 ] == '\n') {
-			l--;
-			exit++;
-		}
-		pos += l;
-		if (exit) return;
-	}
-
+void deleteEnter(void* buffer){
+	char*ptr=strchr(buffer,'\n');
+	if(ptr!=NULL) *ptr=0;
 }
-
 char* makeConnectString(const size_t buffersize, char *typestring) {
 	char *result = NULL;
-	if (osMutexAcquire(TransportMutex, osWaitForever) == osOK) {
 		DeviceStatus devStatus;
 		js_write w;
 		GetCopy("setup", &devStatus);
@@ -53,8 +35,6 @@ char* makeConnectString(const size_t buffersize, char *typestring) {
 		js_write_value_end(&w);
 		js_write_end(&w);
 		result = w.start;
-		osMutexRelease(TransportMutex);
-	}
 	return result;
 }
 void setToServerTCPStart(bool v) {
@@ -94,9 +74,10 @@ bool isGoodGPRS() {
 	return GPRSError;
 }
 void BadTCP(char *buffer, int socket, osMessageQueueId_t que) {
-	setGoodTCP(0);
+	setGoodTCP(false);
+	setToServerTCPStart(false);
 	vPortFree(buffer);
-	MessageFromQueue msg;
+	MessageFromQueue msg={.message=NULL};
 	msg.error = TRANSPORT_ERROR;
 	msg.message = NULL;
 	osMessageQueuePut(que, &msg, 0, 0);
@@ -105,9 +86,10 @@ void BadTCP(char *buffer, int socket, osMessageQueueId_t que) {
 	close(socket);
 }
 void BadGPRS(char *buffer, int socket, osMessageQueueId_t que) {
-	setGoodGPRS(0);
+	setGoodGPRS(false);
+	setToServerGPRSStart(false);
 	vPortFree(buffer);
-	MessageFromQueue msg;
+	MessageFromQueue msg={.message=NULL};
 	msg.error = TRANSPORT_ERROR;
 	msg.message = NULL;
 	osMessageQueuePut(que, &msg, 0, 0);

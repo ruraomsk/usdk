@@ -19,6 +19,9 @@
 #define DeviceBufferSize 1024
 #define MAX_LEN_TCP_MESSAGE 1024
 #define STEP_CONTROL 100
+
+#define SIGNAL_NEED_KEEP_ALIVE 1
+
 typedef enum {
 	TRANSPORT_OK=0,
 	TRANSPORT_ERROR,
@@ -29,13 +32,6 @@ typedef struct {
 	ErrorTransport error;
 	char *message;
 } MessageFromQueue;
-typedef struct {
-	int Interval;
-	bool Control;
-	int Count;
-} Interval;
-
-
 
 void mainTransportLoop(void);
 
@@ -49,8 +45,10 @@ bool  isGoodGPRS(void);
 void setToServerTCPStart(bool v);
 void setToServerGPRSStart(bool v);
 void setGPRSNeed(bool v);
-void readSocket(int socket,char *buffer,size_t size);
 
+void setTimeoutForChanel(int interval);
+
+void deleteEnter(void *buffer);
 void TechExchange(void *argument);
 void FromServerTCPLoop(void);
 void ToServerTCPLoop(void);

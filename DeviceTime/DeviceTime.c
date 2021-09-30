@@ -5,7 +5,9 @@
  *      Author: rura
  */
 #include "main.h"
+#include "DebugLogger.h"
 #include "DeviceTime.h"
+#include <string.h>
 #include <stdio.h>
 
 static dev_time DeviceTimer;
@@ -15,6 +17,9 @@ void DeviceTimeInit() {
 	//Здесь потом напишем
 	DeviceTimer = 0;
 	TimerMutex = osMutexNew(NULL);
+}
+int DiffTimeSecond(dev_time start){
+	return (GetDeviceTime()-start)/1000U;
 }
 dev_time GetDeviceTime() {
 	UpdateDeviceTime();
@@ -41,4 +46,17 @@ void UpdateDeviceTime(void) {
 int nanosleep(const struct timespec *tw, struct timespec *tr) {
 	unsigned long int delay = ((unsigned long int) tw->tv_sec) * 1000UL + ((unsigned long int) tw->tv_nsec / 1000UL);
 	return osDelay(delay);
+}
+
+void CallbackQueue(void* arg){
+	CallBackParam* par=(CallBackParam *)arg;
+	uint32_t signal=par->Signal;
+//	uint32_t size= osMessageQueueGetMsgSize(QueueId);
+//	void* buffer=pvPortMalloc(size);
+//	if (buffer==NULL){
+//		Debug_Message(LOG_ERROR, "Нет %d памяти для CallbackQueue",size);
+//		return;
+//	}
+//	memset(buffer,0,size);
+	osMessageQueuePut(par->QueueId,&signal , 0, 0);
 }

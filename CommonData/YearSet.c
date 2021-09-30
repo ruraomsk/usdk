@@ -34,10 +34,10 @@ char* YearSetToJsonString(YearSet *yearSet,size_t size) {
 	js_write_array_start(&jswork, "monthset");
 	for (int i = 0; i < 12 ; ++i) {
 		js_write_value_start(&jswork, "");
-		js_write_int(&jswork, "num", yearSet->months[i].num);
+		js_write_byte(&jswork, "num", yearSet->months[i].num);
 		js_write_array_start(&jswork, "days");
 		for (int j = 0; j < 31; ++j) {
-			js_write_int(&jswork,"",yearSet->months[i].weeks[j]);
+			js_write_byte(&jswork,"",yearSet->months[i].weeks[j]);
 		}
 		js_write_array_end(&jswork);
 		js_write_value_end(&jswork);
@@ -55,10 +55,10 @@ void YearSetFromJsonString(char* root, YearSet *yearSet) {
 	js_read_array(&jswork, &jsdays, "monthsets");
 	for (int i = 0; i < 12; ++i) {
 		if (js_read_array_object(&jsdays, i, &jsmonth)!=JsonSuccess) break;
-		js_read_int(&jsmonth, "num",&yearSet->months[i].num );
+		js_read_byte(&jsmonth, "num",&yearSet->months[i].num );
 		js_read_array(&jsmonth, &jslines, "days");
 		for (int j = 0; j < 31; ++j) {
-			if (js_read_array_int(&jslines, j, &yearSet->months[i].weeks[j])!=JsonSuccess) break;
+			if (js_read_array_byte(&jslines, j, &yearSet->months[i].weeks[j])!=JsonSuccess) break;
 		}
 	}
 

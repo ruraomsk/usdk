@@ -33,10 +33,10 @@ char* WeekSetToJsonString(WeekSet *weekSet,size_t size) {
 	js_write_array_start(&jswork, "wsets");
 	for (int i = 0; i < MAX_WEEKS ; ++i) {
 		js_write_value_start(&jswork, "");
-		js_write_int(&jswork, "num",weekSet->weeks[i].num );
+		js_write_byte(&jswork, "num",weekSet->weeks[i].num );
 		js_write_array_start(&jswork, "days");
 		for (int j = 0; j < 7; ++j) {
-			js_write_int(&jswork,"",weekSet->weeks[i].days[j]);
+			js_write_byte(&jswork,"",weekSet->weeks[i].days[j]);
 		}
 		js_write_array_end(&jswork);
 		js_write_value_end(&jswork);
@@ -54,10 +54,10 @@ void WeekSetFromJsonString(char* root, WeekSet *weekSet) {
 	js_read_array(&jswork, &jswsets, "wsets");
 	for (int i = 0; i < MAX_WEEKS ; ++i) {
 		if (js_read_array_object(&jswsets, i, &objweek)!=JsonSuccess) break;
-		js_read_int(&objweek, "num",&weekSet->weeks[i].num );
+		js_read_byte(&objweek, "num",&weekSet->weeks[i].num );
 		js_read_array(&objweek, &jsdays, "days");
 		for (int j = 0; j < 7; ++j) {
-			if (js_read_array_int(&jsdays,j,&weekSet->weeks[i].days[j])!=JsonSuccess) break;
+			if (js_read_array_byte(&jsdays,j,&weekSet->weeks[i].days[j])!=JsonSuccess) break;
 		}
 	}
 }

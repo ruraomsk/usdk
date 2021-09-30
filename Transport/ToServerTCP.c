@@ -8,6 +8,7 @@
 
 extern osMessageQueueId_t ETHToServerSecQueue;
 extern osMessageQueueId_t ETHFromServerSecQueue;
+char bufferToServerTCP[MAX_LEN_TCP_MESSAGE];
 void ToServerTCPLoop(void) {
 	char name[]="ToServerTCP";
 	MessageFromQueue msg;
@@ -34,8 +35,6 @@ void ToServerTCPLoop(void) {
 	err = lwip_setsockopt(socket, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv));
 	tv.tv_sec = tcpSet.twrite;
 	err = lwip_setsockopt(socket, SOL_SOCKET, SO_SNDTIMEO, &tv, sizeof(tv));
-	uint32_t toque = (uint32_t) tcpSet.tque * 1000U;
-	toque = toque / STEP_CONTROL;
 	err = connect(socket, (struct sockaddr* ) &srv_addr, sizeof(struct sockaddr_in));
 	if (err != 0) {
 		Debug_Message(LOG_ERROR, "%s Нет соединения с сервером по резервному каналу",name);
@@ -53,29 +52,38 @@ void ToServerTCPLoop(void) {
 		vPortFree(buffer);
 		return;
 	}
-	memset(buffer, 0, MAX_LEN_TCP_MESSAGE);
-	readSocket(socket, buffer, MAX_LEN_TCP_MESSAGE);
-	len=strlen(buffer);
+	vPortFree(buffer);
+	buffer=NULL;
+	memset(bufferToServerTCP, 0, MAX_LEN_TCP_MESSAGE);
+	read(socket, bufferToServerTCP, MAX_LEN_TCP_MESSAGE);
+	len=strlen(bufferToServerTCP);
 	if (len < 1) {
 		Debug_Message(LOG_ERROR, "%s Ошибка чтения ",name);
 		BadTCP(buffer, socket, ETHFromServerSecQueue);
-		vPortFree(buffer);
 		return;
 	}
-	buffer [ len - 1 ] = 0;
-	msg.message = buffer;
+	deleteEnter(bufferToServerTCP);
+	msg.message = pvPortMalloc(len);
+	if(msg.message==NULL){
+		Debug_Message(LOG_ERROR, "%s Нет памяти %d",name,len);
+		BadTCP(buffer, socket, ETHFromServerSecQueue);
+		return;
+	}
 	msg.error = TRANSPORT_OK;
+	memcpy(msg.message,bufferToServerTCP,len);
 	Debug_Message(LOG_INFO, "%s принял %.20s", name,msg.message);
 	osMessageQueuePut(ETHFromServerSecQueue, &msg, 0, 0);
-
+	buffer=NULL;
 	for (;;) {
-		int count = toque;
-		while (osMessageQueueGet(ETHToServerSecQueue, &msg, NULL, toque) != osOK) {
-			if (--count < 0 || !isGoodTCP()) {
+		GetCopy("csec", &tcpSet);
+		dev_time start=GetDeviceTime();
+		while (osMessageQueueGet(ETHToServerSecQueue, &msg, NULL, STEP_CONTROL) != osOK) {
+			if (DiffTimeSecond(start)>tcpSet.tque  || !isGoodTCP()) {
 				Debug_Message(LOG_ERROR, "%s нет сообщения или сброс ",name);
 				BadTCP(buffer, socket, ETHFromServerSecQueue);
 				return;
 			}
+			osDelay(STEP_CONTROL);
 		}
 		int len = strlen(msg.message);
 		msg.message [ len ] = '\n';
@@ -89,25 +97,24 @@ void ToServerTCPLoop(void) {
 		}
 		Debug_Message(LOG_INFO, "%s передал %.20s",name, msg.message);
 		vPortFree(msg.message);
-		buffer = pvPortMalloc(MAX_LEN_TCP_MESSAGE);
-		if (buffer == NULL) {
-			Debug_Message(LOG_ERROR, "ToServerTCP Нет памяти");
-			BadTCP(buffer, socket, ETHFromServerSecQueue);
-			return;
-		}
-		memset(buffer, 0, MAX_LEN_TCP_MESSAGE);
-		readSocket(socket, buffer, MAX_LEN_TCP_MESSAGE);
-		len=strlen(buffer);
+		memset(bufferToServerTCP, 0, MAX_LEN_TCP_MESSAGE);
+		read(socket, bufferToServerTCP, MAX_LEN_TCP_MESSAGE);
+		len=strlen(bufferToServerTCP);
 		if (len < 1) {
 			Debug_Message(LOG_ERROR, "%s Ошибка чтения ",name);
 			BadTCP(buffer, socket, ETHFromServerSecQueue);
-			vPortFree(buffer);
 			return;
 		}
-		buffer [ len - 1 ] = 0;
-		msg.message = buffer;
+		deleteEnter(bufferToServerTCP);
+		msg.message = pvPortMalloc(len);
+		if(msg.message==NULL){
+			Debug_Message(LOG_ERROR, "%s Нет памяти %d",name,len);
+			BadTCP(buffer, socket, ETHFromServerSecQueue);
+			return;
+		}
 		msg.error = TRANSPORT_OK;
-		Debug_Message(LOG_INFO, "%s принял %.20s",name, msg.message);
+		memcpy(msg.message,bufferToServerTCP,len);
 		osMessageQueuePut(ETHFromServerSecQueue, &msg, 0, 0);
+		Debug_Message(LOG_INFO, "%s принял %.20s",name, msg.message);
 	}
 }

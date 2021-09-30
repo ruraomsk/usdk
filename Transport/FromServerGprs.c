@@ -63,7 +63,7 @@ void FromServerGPRSLoop(void) {
 		tv.tv_sec = tcpSet.tread;
 		err = lwip_setsockopt(socket, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv));
 		memset(buffer, 0, MAX_LEN_TCP_MESSAGE);
-		readSocket(socket, buffer, MAX_LEN_TCP_MESSAGE);
+		recv(socket, buffer, MAX_LEN_TCP_MESSAGE,0);
 		len=strlen(buffer);
 		if (len < 1) {
 			Debug_Message(LOG_ERROR, "%s Ошибка чтения ",name);
@@ -71,6 +71,7 @@ void FromServerGPRSLoop(void) {
 			vPortFree(buffer);
 			return;
 		}
+		deleteEnter(buffer);
 		setGoodGPRS(true);
 		setToServerGPRSStart(true);
 		Debug_Message(LOG_INFO, "%s принял %.20s",name, buffer);
@@ -79,18 +80,21 @@ void FromServerGPRSLoop(void) {
 		msg.message = buffer;
 		msg.error = TRANSPORT_OK;
 		osMessageQueuePut(GPRSFromServerQueue, &msg, 0, 0);
+		buffer=NULL;
 		int count = toque;
-		while (osMessageQueueGet(GPRSToServerQueue, &msg, NULL, STEP_CONTROL) != osOK) {
+		while (osMessageQueueGet(GPRSToServerQueue, &msg, NULL, STEP_CONTROL/2) != osOK) {
 			if (--count < 0 || !isGoodGPRS()) {
 				Debug_Message(LOG_ERROR, "%s Таймаут или сброс",name);
 				BadGPRS(buffer, socket, GPRSFromServerQueue);
 				return;
 			}
+//			if (count%10==0) Debug_Message(LOG_INFO, "%s ждем %d", name,count);
+			osDelay(STEP_CONTROL/2);
 		}
 		len = strlen(msg.message);
 		msg.message[len] = '\n';
 		msg.message[len + 1] = 0;
-		err = send(socket, buffer, strlen(buffer), 0);
+		err = send(socket, msg.message, strlen(msg.message), 0);
 		if (err < 0) {
 			Debug_Message(LOG_ERROR, "%s Не смог передать строку ответа %.20s",name, msg.message);
 			BadGPRS(buffer, socket, GPRSFromServerQueue);

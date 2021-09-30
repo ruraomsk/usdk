@@ -7,6 +7,7 @@
 
 #ifndef COMMONDATA_H_
 #define COMMONDATA_H_
+#include <stdint.h>
 #include <stdbool.h>
 #define MAX_WEEKS 	32
 #define MAX_DAYS  	12
@@ -36,8 +37,8 @@ typedef struct {
 } SetupDK;
 //Один месяц из годового плана
 typedef struct {
-	int num;
-	int weeks [ 31 ];
+	uint8_t num;
+	uint8_t weeks [ 31 ];
 } OneMonth;
 //Весь годовой набор
 typedef struct {
@@ -45,8 +46,8 @@ typedef struct {
 } YearSet;
 //Одна строка недельного плана
 typedef struct {
-	int num;
-	int days [ 7 ];
+	uint8_t num;
+	uint8_t days [ 7 ];
 } OneWeek;
 //Все недельные планы
 typedef struct {

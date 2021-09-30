@@ -30,6 +30,7 @@
 
 #include <stdbool.h>
 #include <stddef.h>
+#include <stdint.h>
 
 /* *INDENT-OFF* */
 #ifdef __cplusplus
@@ -353,6 +354,7 @@ JSONStatus_t js_write_start(js_write *work,size_t size);
 JSONStatus_t js_write_end(js_write *work);
 void js_write_free(js_write *work);
 JSONStatus_t js_write_int(js_write *w,char *name,int value);
+JSONStatus_t js_write_byte(js_write *w,char *name,uint8_t value);
 JSONStatus_t js_write_string(js_write *w,char *name,char *value);
 JSONStatus_t js_write_bool(js_write *w,char *name,bool value);
 JSONStatus_t js_write_double(js_write *w,char *name,double value);
@@ -363,6 +365,7 @@ JSONStatus_t js_write_array_end(js_write *w);
 
 JSONStatus_t js_read_start(js_read* w, char* buffer);
 JSONStatus_t js_read_int(js_read* w,char* name,int *value);
+JSONStatus_t js_read_byte(js_read* w,char* name,uint8_t *value);
 JSONStatus_t js_read_string(js_read* w,char* name,char *value);
 JSONStatus_t js_read_double(js_read* w,char* name,double *value);
 JSONStatus_t js_read_bool(js_read* w,char* name,bool *value);
@@ -370,6 +373,7 @@ JSONStatus_t js_read_bool(js_read* w,char* name,bool *value);
 JSONStatus_t js_read_array(js_read* w, js_read *array,char* name);
 JSONStatus_t js_read_array_object(js_read* array,size_t index,js_read* object);
 JSONStatus_t js_read_array_int(js_read* array,size_t index,int *value);
+JSONStatus_t js_read_array_byte(js_read* array,size_t index,uint8_t *value);
 JSONStatus_t js_read_array_string(js_read* array,size_t index,char *value);
 JSONStatus_t js_read_array_double(js_read* array,size_t index,double *value);
 JSONStatus_t js_read_array_bool(js_read* array,size_t index,bool *value);

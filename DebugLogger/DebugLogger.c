@@ -60,37 +60,32 @@ void DebugLoggerLoop() {
 	server.sin_family=AF_INET;
 	server.sin_port=htons(2095);
 	inet_aton("192.168.115.159",&server.sin_addr.s_addr);
+	int c=10;
 	socket=socket(AF_INET,SOCK_STREAM,0);
 	if (socket>=0){
 		int err;
 		do{
-			osDelay(1000);
 			err=connect(socket, (struct sockaddr* ) &server, sizeof(struct sockaddr_in));
-
+			if (--c<0) break;
+			osDelay(1000);
 		} while(err!=0);
 	}
 	Debug_Message(LOG_INFO, "Logger запущен");
 #define COUNTER 5000
 	int count=COUNTER;
+	size_t minimum=INT32_MAX;
 	/* Infinite loop */
 	for (;;) {
 		if (osMessageQueueGet(DebugLoggerQueue, &msg, NULL, 10) == osOK) {
 			count=COUNTER;
-			snprintf(LoggerBuffer,SIZE_LOGGER_BUFFER, "%s:%6s:%6d:%s\n", TimeToString(msg.time), Debuger_Status(msg.Level),msg.size, msg.Buffer);
+			minimum=msg.size<minimum?msg.size:minimum;
+			snprintf(LoggerBuffer,SIZE_LOGGER_BUFFER, "%s:%6s:%6d:%6d:%s\n", TimeToString(msg.time), Debuger_Status(msg.Level),msg.size,minimum, msg.Buffer);
 			while (socket>=0){
 				int err=send(socket,LoggerBuffer,strlen(LoggerBuffer),0);
 				if (err<0) {
 					shutdown(socket, SHUT_RDWR);
 					close(socket);
 					socket=-1;
-
-//					int err;
-//					do{
-//						osDelay(1000);
-//						err=connect(socket, (struct sockaddr* ) &server, sizeof(struct sockaddr_in));
-//
-//					} while(err!=0);
-//					continue;
 				}
 				break;
 			}

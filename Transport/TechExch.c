@@ -18,31 +18,79 @@
 #include "Transport.h"
 #include "DebugLogger.h"
 #include "DeviceLogger.h"
+#include "DeviceTime.h"
 #include "service.h"
 #include "core_json.h"
 #include <stdbool.h>
 #include <string.h>
 #include <strings.h>
+#include <stdio.h>
 extern osMessageQueueId_t ChangeStatus;
 extern osMessageQueueId_t ToServerQueue;
 extern osMessageQueueId_t FromServerQueue;
 extern osMessageQueueId_t ToServerSecQueue;
 extern osMessageQueueId_t FromServerSecQueue;
 
+osTimerId_t TimerTechInterval;
+osMessageQueueId_t TimerTechQueue;
+
+
 MessageFromQueue from;
 MessageFromQueue to;
+
+CallBackParam param={.Signal=SIGNAL_NEED_KEEP_ALIVE};
+
 bool mainConnect=false;
 bool secConnect=false;
+int Interval=20;
 int tout=10;
-char rString[80];
-int interval=-1;
-bool controlInterbal=false;
-int count=-1;
 #define MESSAGE_OK "ok"
 #define GIVE_ME_STATUS "give_me_status"
+#define DIFF_INTERVAL 5
+void setTimeoutForChanel(int interval){
+	TCPSet tcpSetSec;
+	TCPSet tcpSetMain;
+	GetCopy("csec", &tcpSetSec);
+	GetCopy("cmain", &tcpSetMain);
+	tcpSetSec.tque=interval+DIFF_INTERVAL;
+	tcpSetMain.tread=interval+DIFF_INTERVAL;
+	SetCopy("cmain", &tcpSetMain);
+	SetCopy("csec", &tcpSetSec);
+}
+void prepareConnectMessage(char* message){
+	int server_number,interval;
+	sscanf(message+3,"%d,%d",&server_number,&interval);
+	if (interval!=Interval){
+		osTimerStop(TimerTechInterval);
+		osTimerStart(TimerTechInterval, (interval-DIFF_INTERVAL)*1000U);
+		Interval=interval;
+		setTimeoutForChanel(Interval);
+	}
+}
 void TechExchange(void *argument){
+	setTimeoutForChanel(Interval);
+	TimerTechQueue=osMessageQueueNew(6, sizeof(uint32_t), NULL);
+	if(TimerTechQueue==NULL){
+		Debug_Message(LOG_FATAL, "TechExchange Невозможно создать очередь интервалов");
+		return;
+	}
+	param.QueueId=TimerTechQueue;
+	TimerTechInterval=osTimerNew(CallbackQueue, osTimerPeriodic, &param, NULL);
+	osTimerStart(TimerTechInterval, (Interval-DIFF_INTERVAL)*1000U);
 	for(;;){
-		vTaskDelay(100);
+		vTaskDelay(STEP_CONTROL);
+//		Debug_Message(LOG_INFO, "Цикл TechExchange");
+		uint32_t signal;
+		if (osMessageQueueGet(TimerTechQueue, &signal, NULL, tout)==osOK){
+			if(signal==SIGNAL_NEED_KEEP_ALIVE && secConnect) {
+				Debug_Message(LOG_INFO, "Начинаем KEEP_ALIVE");
+				to.error=TRANSPORT_OK;
+				to.message=MessageStatusDevice();
+				osMessageQueuePut(ToServerSecQueue, &to, 0, 0);
+			}else {
+				Debug_Message(LOG_INFO, "Таймер вернул %d",signal);
+			}
+		}
 		if (osMessageQueueGet(FromServerQueue, &from, NULL, tout) == osOK) {
 			if (from.error != TRANSPORT_OK) {
 				//Сообщение с ошибкой нужно начинать заново
@@ -53,6 +101,7 @@ void TechExchange(void *argument){
 			if(!mainConnect){
 				//Должно быть сообщения коннекта
 				if (strncmp(MESSAGE_OK,from.message,strlen(MESSAGE_OK))==0){
+					prepareConnectMessage(from.message);
 					mainConnect=true;
 					to.error=TRANSPORT_OK;
 					to.message=MessageConfirm();
@@ -68,6 +117,9 @@ void TechExchange(void *argument){
 				vPortFree(from.message);
 				continue;
 			}
+			Debug_Message(LOG_INFO, "Главное сообщение не обработано %.20s",from.message);
+			vPortFree(from.message);
+
 		}
 		if (osMessageQueueGet(FromServerSecQueue, &from, NULL, tout) == osOK) {
 			if (from.error != TRANSPORT_OK) {
@@ -79,16 +131,18 @@ void TechExchange(void *argument){
 			if(!secConnect){
 				//Должно быть сообщения коннекта
 				if (strncmp(MESSAGE_OK,from.message,strlen(MESSAGE_OK))==0){
-					mainConnect=true;
+					secConnect=true;
+					prepareConnectMessage(from.message);
 					to.error=TRANSPORT_OK;
 					to.message=MessageConfirm();
-					osMessageQueuePut(ToServerQueue, &to, 0, 0);
+					osMessageQueuePut(ToServerSecQueue, &to, 0, 0);
 
 				}
 				vPortFree(from.message);
 				continue;
 			}
-//			doSecondMessage(from);
+			Debug_Message(LOG_INFO, "Сообщение  по второму каналу не обработано %.20s",from.message);
+			vPortFree(from.message);
 		}
 
 

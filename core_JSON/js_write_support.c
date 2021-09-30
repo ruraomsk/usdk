@@ -39,6 +39,13 @@ JSONStatus_t js_write_int(js_write *w, char *name, int value) {
 		w->pos +=snprintf(w->pos, w->size - (w->pos - w->start), "\"%s\":%d,", name, value);
 	return js_verify(w);
 }
+JSONStatus_t js_write_byte(js_write *w, char *name, uint8_t value) {
+	if (strlen(name) == 0)
+		w->pos +=snprintf(w->pos, w->size - (w->pos - w->start), "%d,", value);
+	else
+		w->pos +=snprintf(w->pos, w->size - (w->pos - w->start), "\"%s\":%d,", name, value);
+	return js_verify(w);
+}
 JSONStatus_t js_write_string(js_write *w, char *name, char *value) {
 	if (strlen(name) == 0)
 		w->pos +=snprintf(w->pos, w->size - (w->pos - w->start), "\"%s\",", value);
