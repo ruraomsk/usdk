@@ -36,7 +36,7 @@ typedef struct {
 void mainTransportLoop(void);
 
 char* makeConnectString(const size_t buffersize,char *typestring);
-void BadTCP(char *buffer,int socket,osMessageQueueId_t que);
+void BadTCP(int socket,osMessageQueueId_t que);
 void BadGPRS(char *buffer,int socket,osMessageQueueId_t que);
 void setGoodTCP(bool v);
 void setGoodGPRS(bool v);

@@ -8,7 +8,6 @@
 #ifndef CAMERA_H_
 #define CAMERA_H_
 
-void initCamera(void);
-void cameraMainLoop(void);
+void initCameras(void);
 
 #endif /* CAMERA_H_ */

@@ -17,11 +17,9 @@
 
 static SubNames DevLogWork[] = { { SUB_TRANSPORT, "Транспорт", NULL }, { SUB_FILES, "Файл", NULL }, { SUB_END, "\0",
 NULL } };
-osMutexId_t LogDevMutex;
 RingBuffer *devicelogs;
 DeviceLoggerMessage msg, oldmsg;
 void DeviceLogInit() {
-	LogDevMutex = osMutexNew(NULL);
 	devicelogs = newRingBuffer(CAPACITY_MESSAGES, sizeof(DeviceLoggerMessage));
 	if (devicelogs == NULL) {
 		Debug_Message(LOG_FATAL, "Невозможно создать лог устройства");
@@ -82,7 +80,6 @@ void saveRingBufferToFile() {
 	UnlockFiles();
 }
 void DeviceLog(char subsytem, char *fmt, ...) {
-	if (osMutexAcquire(LogDevMutex, osWaitForever) == osOK) {
 		SubNames *subName = getSubsystem(subsytem);
 		if (subName != NULL) {
 			va_list ap;
@@ -106,23 +103,17 @@ void DeviceLog(char subsytem, char *fmt, ...) {
 		} else {
 			Debug_Message(LOG_ERROR, "Неверный номер подсистемы");
 		}
-		osMutexRelease(LogDevMutex);
-	}
 }
 // Создает в строке json один элемент массива сообщения если вернули false значит не осталось сообщений
 bool LogLineToJsonSubString(js_write *w) {
-	if (osMutexAcquire(LogDevMutex, osWaitForever) == osOK) {
 		if (RingBufferTryRead(devicelogs, (void*) &msg) != RINGBUFFER_OK) {
 			js_write_value_start(w, "");
 			js_write_int(w, "time", msg.time);
 			js_write_string(w, "sub",getSubsystem(msg.subsystem)->name );
 			js_write_string(w, "mess",msg.message);
 			js_write_value_end(w);
-			osMutexRelease(LogDevMutex);
 			return true;
 		}
-		osMutexRelease(LogDevMutex);
-	}
 	return false;
 }
 

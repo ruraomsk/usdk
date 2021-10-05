@@ -29,7 +29,7 @@ typedef struct {
 } SubNames;
 
 typedef struct {
-	dev_time time;
+	time_t time;
 	char subsystem;
 	char message[MAX_LEN_MESSAGE];
 } DeviceLoggerMessage;

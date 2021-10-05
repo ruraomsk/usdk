@@ -31,6 +31,7 @@ Drivers/BSP/Components/lan8742 \
 Drivers/STM32H7xx_HAL_Driver/Src \
 FatFs \
 Files \
+GPS \
 LWIP/App \
 LWIP/Target \
 Middlewares/ST/STM32_USB_Device_Library/Class/MSC/Src \
@@ -51,6 +52,7 @@ MobusTCP \
 Transport \
 USB_DEVICE/App \
 USB_DEVICE/Target \
+UartStream \
 core_JSON \
 libmodbus \
 

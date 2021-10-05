@@ -7,56 +7,52 @@
 #include "main.h"
 #include "DebugLogger.h"
 #include "DeviceTime.h"
+#include "CommonData.h"
 #include <string.h>
 #include <stdio.h>
+#include <time.h>
 
-static dev_time DeviceTimer;
-static char DeviceTimeBuffer[20];
-static osMutexId_t TimerMutex;
+osTimerId_t DeviceTimerIncrement;
+
+static time_t DeviceTimer;
+static uint32_t oldTicks=0;
+void incrementDeviceTime(void *arg) {
+	DeviceTimer+=(HAL_GetTick()-oldTicks)/1000U;
+	oldTicks=HAL_GetTick();
+}
 void DeviceTimeInit() {
 	//Здесь потом напишем
 	DeviceTimer = 0;
-	TimerMutex = osMutexNew(NULL);
+	DeviceTimerIncrement = osTimerNew(incrementDeviceTime, osTimerPeriodic, NULL, NULL);
+	osTimerStart(DeviceTimerIncrement, 1000U);
 }
-int DiffTimeSecond(dev_time start){
-	return (GetDeviceTime()-start)/1000U;
+long int DiffTimeSecond(time_t start) {
+	return (DeviceTimer - start);
 }
-dev_time GetDeviceTime() {
-	UpdateDeviceTime();
+time_t GetDeviceTime() {
 	return DeviceTimer;
 }
-char* TimeToString(dev_time time) {
-	if (osMutexAcquire(TimerMutex, osWaitForever) == osOK) {
-		int hour, minute, sec, msec;
-		msec = time % 1000;
-		sec = (time / 1000U) % 86400U;
-		hour = sec / 3600;
-		sec -= hour * 3600;
-		minute = sec / 60;
-		sec = sec % 60;
-		sprintf(DeviceTimeBuffer, "%02d.%02d.%02d.%03d", hour, minute, sec, msec);
-		osMutexRelease(TimerMutex);
-		return DeviceTimeBuffer;
-	}
-	return "ERROR!\0";
+void UpdateDeviceTime(time_t time) {
+	struct tm *u;
+	u=localtime(&time);
+	TimeDevice td;
+	GetCopy("tdev", &td);
+	u->tm_hour+=td.TimeZone;
+	DeviceTimer = mktime(u);
 }
-void UpdateDeviceTime(void) {
-	DeviceTimer = HAL_GetTick();
+char bufferTime [ 30 ];
+
+char* TimeToString(time_t time) {
+	struct tm *u;
+	u = localtime(&time);
+	strftime(bufferTime, sizeof(bufferTime), "%d.%m.%Y %H:%M:%S", u);
+	return bufferTime;
 }
 int nanosleep(const struct timespec *tw, struct timespec *tr) {
 	unsigned long int delay = ((unsigned long int) tw->tv_sec) * 1000UL + ((unsigned long int) tw->tv_nsec / 1000UL);
 	return osDelay(delay);
 }
-
-void CallbackQueue(void* arg){
-	CallBackParam* par=(CallBackParam *)arg;
-	uint32_t signal=par->Signal;
-//	uint32_t size= osMessageQueueGetMsgSize(QueueId);
-//	void* buffer=pvPortMalloc(size);
-//	if (buffer==NULL){
-//		Debug_Message(LOG_ERROR, "Нет %d памяти для CallbackQueue",size);
-//		return;
-//	}
-//	memset(buffer,0,size);
-	osMessageQueuePut(par->QueueId,&signal , 0, 0);
+void CallbackQueue(void *arg) {
+	CallBackParam *par = (CallBackParam*) arg;
+	osMessageQueuePut(par->QueueId, &par->Signal, 0, 0);
 }

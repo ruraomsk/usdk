@@ -18,6 +18,7 @@
 #define SIZE_LOGGER_BUFFER 256
 osMessageQueueId_t DebugLoggerQueue;
 char *LoggerBuffer = NULL;
+#define LIMIT_DEBUG_LOGGER_SIZE_Kb  50
 void Debug_Init() {
 	DebugLoggerQueue = osMessageQueueNew(32, sizeof(DebugLoggerMsg), NULL);
 	LoggerBuffer = pvPortMalloc(SIZE_LOGGER_BUFFER);
@@ -26,16 +27,13 @@ HeapStats_t pxHeapStats;
 void Debug_Message(int level, char *fmt, ...) {
 	va_list ap;
 	va_start(ap, fmt);
-	DebugLoggerMsg *newLog;
+	DebugLoggerMsg newLog;
 	vPortGetHeapStats(&pxHeapStats);
-	newLog = pvPortMalloc(sizeof(DebugLoggerMsg));
-	if (newLog==NULL) return;
-	vsnprintf(newLog->Buffer, sizeof(newLog->Buffer)-1, fmt, ap);
-	newLog->Level = level;
-	newLog->time = GetDeviceTime();
-	newLog->size=pxHeapStats.xAvailableHeapSpaceInBytes;
-	osMessageQueuePut(DebugLoggerQueue, newLog, 0, 0);
-	vPortFree(newLog);
+	vsnprintf(newLog.Buffer, sizeof(newLog.Buffer)-1, fmt, ap);
+	newLog.Level = level;
+	newLog.time = GetDeviceTime();
+	newLog.size=pxHeapStats.xAvailableHeapSpaceInBytes;
+	osMessageQueuePut(DebugLoggerQueue, &newLog, 0, 0);
 }
 char* Debuger_Status(int level) {
 	switch (level) {
@@ -51,6 +49,7 @@ char* Debuger_Status(int level) {
 		return "UNDEF";
 	}
 }
+
 DebugLoggerMsg msg;
 void DebugLoggerLoop() {
 	FIL flog;
@@ -81,15 +80,20 @@ void DebugLoggerLoop() {
 			minimum=msg.size<minimum?msg.size:minimum;
 			snprintf(LoggerBuffer,SIZE_LOGGER_BUFFER, "%s:%6s:%6d:%6d:%s\n", TimeToString(msg.time), Debuger_Status(msg.Level),msg.size,minimum, msg.Buffer);
 			while (socket>=0){
-				int err=send(socket,LoggerBuffer,strlen(LoggerBuffer),0);
-				if (err<0) {
-					shutdown(socket, SHUT_RDWR);
-					close(socket);
-					socket=-1;
-				}
+				send(socket,LoggerBuffer,strlen(LoggerBuffer),0);
+//				if (err<0) {
+//					shutdown(socket, SHUT_RDWR);
+//					close(socket);
+//					socket=-1;
+//				}
 				break;
 			}
 			f_open(&flog, "debug.log", FA_WRITE | FA_OPEN_ALWAYS);
+			if (f_size(&flog)>LIMIT_DEBUG_LOGGER_SIZE_Kb*1024){
+				f_close(&flog);
+				f_unlink("debug.log");
+				f_open(&flog, "debug.log", FA_WRITE | FA_OPEN_ALWAYS);
+			}
 			f_lseek(&flog, f_size(&flog));
 			f_write(&flog, LoggerBuffer, strlen(LoggerBuffer), &bw);
 			f_close(&flog);

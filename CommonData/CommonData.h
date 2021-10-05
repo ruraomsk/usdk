@@ -15,6 +15,8 @@
 #define MAX_PKS   	64
 #define MAX_PHASES 	32
 #define MAX_STAGES 	64
+#define MAX_CAMERAS 16
+
 //Описание одной фазы со всеми нужными вещами
 typedef struct {
 	int num;
@@ -24,6 +26,7 @@ typedef struct {
 typedef struct {
 	DefinePhase defPhase [ MAX_PHASES ];
 } PhasesSet;
+
 //Настройки ДК
 typedef struct {
 	int dkn;
@@ -35,6 +38,7 @@ typedef struct {
 	int tprom;
 	bool preset;
 } SetupDK;
+
 //Один месяц из годового плана
 typedef struct {
 	uint8_t num;
@@ -53,6 +57,7 @@ typedef struct {
 typedef struct {
 	OneWeek weeks [ MAX_WEEKS ];
 } WeekSet;
+
 //Одна строка суточного плана
 typedef struct {
 	int time;
@@ -68,6 +73,7 @@ typedef struct {
 typedef struct {
 	OneDay days [ MAX_DAYS ];
 } DaySet;
+
 //Одна строка плана координации
 typedef struct {
 	int line;
@@ -93,6 +99,7 @@ typedef struct {
 	SetPk pks [ MAX_PKS ];
 } AllPks;
 
+
 //Настройки устройства
 typedef struct {
 	int ID;
@@ -109,7 +116,34 @@ typedef struct {
 	int twrite;
 	int tque;
 }TCPSet;
+//Настройка временных зон
+typedef struct {
+	int TimeZone;
+	bool Summer;
+}TimeDevice;
 
+//Состояние GPS
+typedef struct{
+	bool Ok;		//	Все исправно
+	bool E01;		// 	Нет связи с приемником
+	bool E02;		//	Ошибка CRC
+	bool E03;		//  Нет валидного времени
+	bool E04;		//  Мало спутников
+	bool Seek;		//  Поиск спутников после включения
+} GPSSet;
+// Описание одной подключенной камеры
+typedef struct {
+	char ip [ 20 ];		//json:"ip"
+	int port;			//json:"port"
+	int id;				//json:"id"
+	char login[20];		//json:"login"
+	char password[20];	//json:"password"
+	int chanels;
+}OneCamera;
+// Все Подключенные камеры
+typedef struct {
+	OneCamera cameras[MAX_CAMERAS];		//json:"cameras"
+}CameraSet;
 
 void initCommonData(void);
 int getWeekDay(WeekSet *weekSet, int week, int day);

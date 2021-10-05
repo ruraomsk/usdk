@@ -49,4 +49,16 @@ void clearTCPSet(TCPSet *t);
 char* TCPSetToJsonString(TCPSet *t,size_t size);
 void TCPSetFromJsonString(char *root, TCPSet *t);
 
+void clearTimeDevice(TimeDevice *t);
+char* TimeDeviceToJsonString(TimeDevice *t,size_t size);
+void TimeDeviceFromJsonString(char *root, TimeDevice *t);
+
+void clearGPSSet(GPSSet *g);
+char* GPSSetToJsonString(GPSSet *g,size_t size);
+void GPSSetFromJsonString(char *root, GPSSet *g);
+
+void clearCameraSet(CameraSet *c);
+char* CameraSetToJsonString(CameraSet *c,size_t size);
+void CameraSetFromJsonString(char *root, CameraSet *c);
+
 #endif /* COMMON_PRIVATE_H_ */

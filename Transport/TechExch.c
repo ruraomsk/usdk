@@ -59,13 +59,25 @@ void setTimeoutForChanel(int interval){
 }
 void prepareConnectMessage(char* message){
 	int server_number,interval;
-	sscanf(message+3,"%d,%d",&server_number,&interval);
+	time_t newTime;
+	sscanf(message+sizeof(MESSAGE_OK),"%d,%d,%lld",&server_number,&interval,&newTime);
+	GPSSet gps;
+	GetCopy("gps", &gps);
+	if (!gps.Ok)	UpdateDeviceTime(newTime);
 	if (interval!=Interval){
-		osTimerStop(TimerTechInterval);
-		osTimerStart(TimerTechInterval, (interval-DIFF_INTERVAL)*1000U);
 		Interval=interval;
 		setTimeoutForChanel(Interval);
 	}
+}
+void prepareGiveMeStatus(char* message){
+	time_t newTime;
+	sscanf(message+sizeof(GIVE_ME_STATUS),"%lld",&newTime);
+	GPSSet gps;
+	GetCopy("gps", &gps);
+	if (!gps.Ok)	UpdateDeviceTime(newTime);
+}
+void restartTicker(){
+	osTimerStart(TimerTechInterval, (Interval-DIFF_INTERVAL)*1000U);
 }
 void TechExchange(void *argument){
 	setTimeoutForChanel(Interval);
@@ -75,8 +87,8 @@ void TechExchange(void *argument){
 		return;
 	}
 	param.QueueId=TimerTechQueue;
-	TimerTechInterval=osTimerNew(CallbackQueue, osTimerPeriodic, &param, NULL);
-	osTimerStart(TimerTechInterval, (Interval-DIFF_INTERVAL)*1000U);
+	TimerTechInterval=osTimerNew(CallbackQueue, osTimerOnce, &param, NULL);
+//	osTimerStart(TimerTechInterval, (Interval-DIFF_INTERVAL)*1000U);
 	for(;;){
 		vTaskDelay(STEP_CONTROL);
 //		Debug_Message(LOG_INFO, "Цикл TechExchange");
@@ -112,12 +124,13 @@ void TechExchange(void *argument){
 				continue;
 			}
 			if (strncmp(GIVE_ME_STATUS,from.message,strlen(GIVE_ME_STATUS))==0){
+				prepareGiveMeStatus(from.message);
 				to.message=MessageStatusDevice();
 				osMessageQueuePut(ToServerQueue, &to, 0, 0);
 				vPortFree(from.message);
 				continue;
 			}
-			Debug_Message(LOG_INFO, "Главное сообщение не обработано %.20s",from.message);
+			Debug_Message(LOG_INFO, "Главное сообщение не обработано %.60s",from.message);
 			vPortFree(from.message);
 
 		}
@@ -136,15 +149,20 @@ void TechExchange(void *argument){
 					to.error=TRANSPORT_OK;
 					to.message=MessageConfirm();
 					osMessageQueuePut(ToServerSecQueue, &to, 0, 0);
-
+					restartTicker();
 				}
 				vPortFree(from.message);
 				continue;
 			}
-			Debug_Message(LOG_INFO, "Сообщение  по второму каналу не обработано %.20s",from.message);
+			if (strncmp(MESSAGE_OK,from.message,strlen(MESSAGE_OK))==0){
+				Debug_Message(LOG_INFO, "Перезапуск таймера");
+				restartTicker();
+				vPortFree(from.message);
+				continue;
+			}
+			Debug_Message(LOG_INFO, "Сообщение  по второму каналу не обработано %.60s",from.message);
 			vPortFree(from.message);
+			continue;
 		}
-
-
 	}
 }

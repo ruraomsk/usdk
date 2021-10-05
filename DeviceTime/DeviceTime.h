@@ -16,17 +16,18 @@
 #define TimeMinute (60*TimeSecond)
 #define TimeHour   (TimeMinute*60)
 #define DeviceTimeStep 100
-typedef unsigned long int dev_time;
+
 typedef struct {
 	osMessageQueueId_t QueueId;
 	uint32_t Signal;
 }CallBackParam;
+
 void DeviceTimeInit();
-dev_time GetDeviceTime(void);
-char* TimeToString(dev_time time);
-void UpdateDeviceTime(void);
+time_t GetDeviceTime(void);
+char* TimeToString(time_t time);
+void UpdateDeviceTime(time_t time);
 int nanosleep (const struct timespec *tw, struct timespec *tr);
 void CallbackQueue(void* arg);
-int DiffTimeSecond(dev_time start);
+long int DiffTimeSecond(time_t start);
 
 #endif /* DEVICETIME_H_ */

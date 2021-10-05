@@ -8,8 +8,8 @@ api_lib.c:351:1:netconn_bind_if	56	static
 api_lib.c:377:1:netconn_connect	64	static
 api_lib.c:409:1:netconn_disconnect	56	static
 api_lib.c:434:1:netconn_listen_with_backlog	56	static
-api_lib.c:471:1:netconn_accept	48	static
-api_lib.c:579:1:netconn_recv_data	64	static
+api_lib.c:471:1:netconn_accept	32	static
+api_lib.c:579:1:netconn_recv_data	40	static
 api_lib.c:677:1:netconn_tcp_recvd_msg	24	static
 api_lib.c:689:1:netconn_tcp_recvd	56	static
 api_lib.c:703:1:netconn_recv_data_tcp	72	static

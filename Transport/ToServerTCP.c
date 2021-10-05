@@ -26,7 +26,7 @@ void ToServerTCPLoop(void) {
 	socket = socket(AF_INET, SOCK_STREAM, 0);
 	if (socket < 0) {
 		Debug_Message(LOG_ERROR, "%s Не могу создать сокет %d",name, errno);
-		BadTCP(buffer, socket, ETHFromServerSecQueue);
+		BadTCP(socket, ETHFromServerSecQueue);
 		return;
 	}
 	//Устанавливаем тайм ауты
@@ -38,49 +38,47 @@ void ToServerTCPLoop(void) {
 	err = connect(socket, (struct sockaddr* ) &srv_addr, sizeof(struct sockaddr_in));
 	if (err != 0) {
 		Debug_Message(LOG_ERROR, "%s Нет соединения с сервером по резервному каналу",name);
-		BadTCP(buffer, socket, ETHFromServerSecQueue);
+		BadTCP(socket, ETHFromServerSecQueue);
 		return;
 	}
 	buffer = makeConnectString(MAX_LEN_TCP_MESSAGE, "ETH");
 	int len = strlen(buffer);
 	buffer [ len ] = '\n';
 	buffer [ len + 1 ] = 0;
-	err = send(socket, buffer, strlen(buffer), 0);
+	strncpy(bufferToServerTCP,buffer,sizeof(bufferToServerTCP));
+	vPortFree(buffer);
+	err = send(socket, bufferToServerTCP, strlen(bufferToServerTCP), 0);
 	if (err < 0) {
-		Debug_Message(LOG_ERROR, "%s Не смог передать строку %.20s",name, buffer);
-		BadTCP(buffer, socket, ETHFromServerSecQueue);
-		vPortFree(buffer);
+		Debug_Message(LOG_ERROR, "%s Не смог передать строку %.60s",name, buffer);
+		BadTCP(socket, ETHFromServerSecQueue);
 		return;
 	}
-	vPortFree(buffer);
-	buffer=NULL;
 	memset(bufferToServerTCP, 0, MAX_LEN_TCP_MESSAGE);
 	read(socket, bufferToServerTCP, MAX_LEN_TCP_MESSAGE);
 	len=strlen(bufferToServerTCP);
 	if (len < 1) {
 		Debug_Message(LOG_ERROR, "%s Ошибка чтения ",name);
-		BadTCP(buffer, socket, ETHFromServerSecQueue);
+		BadTCP(socket, ETHFromServerSecQueue);
 		return;
 	}
 	deleteEnter(bufferToServerTCP);
 	msg.message = pvPortMalloc(len);
 	if(msg.message==NULL){
 		Debug_Message(LOG_ERROR, "%s Нет памяти %d",name,len);
-		BadTCP(buffer, socket, ETHFromServerSecQueue);
+		BadTCP(socket, ETHFromServerSecQueue);
 		return;
 	}
 	msg.error = TRANSPORT_OK;
 	memcpy(msg.message,bufferToServerTCP,len);
-	Debug_Message(LOG_INFO, "%s принял %.20s", name,msg.message);
+	Debug_Message(LOG_INFO, "%s принял %.60s", name,msg.message);
 	osMessageQueuePut(ETHFromServerSecQueue, &msg, 0, 0);
-	buffer=NULL;
 	for (;;) {
 		GetCopy("csec", &tcpSet);
-		dev_time start=GetDeviceTime();
+		time_t start=GetDeviceTime();
 		while (osMessageQueueGet(ETHToServerSecQueue, &msg, NULL, STEP_CONTROL) != osOK) {
 			if (DiffTimeSecond(start)>tcpSet.tque  || !isGoodTCP()) {
 				Debug_Message(LOG_ERROR, "%s нет сообщения или сброс ",name);
-				BadTCP(buffer, socket, ETHFromServerSecQueue);
+				BadTCP(socket, ETHFromServerSecQueue);
 				return;
 			}
 			osDelay(STEP_CONTROL);
@@ -88,33 +86,34 @@ void ToServerTCPLoop(void) {
 		int len = strlen(msg.message);
 		msg.message [ len ] = '\n';
 		msg.message [ len + 1 ] = 0;
-		err = send(socket, msg.message, strlen(msg.message), 0);
+		strncpy(bufferToServerTCP,msg.message,strlen(msg.message));
+		vPortFree(msg.message);
+
+		err = send(socket, bufferToServerTCP, strlen(bufferToServerTCP), 0);
 		if (err < 0) {
-			Debug_Message(LOG_ERROR, "%s Не смог передать строку %.20s",name, msg.message);
-			BadTCP(buffer, socket, ETHFromServerSecQueue);
-			vPortFree(msg.message);
+			Debug_Message(LOG_ERROR, "%s Не смог передать строку %.60s",name, bufferToServerTCP);
+			BadTCP(socket, ETHFromServerSecQueue);
 			return;
 		}
-		Debug_Message(LOG_INFO, "%s передал %.20s",name, msg.message);
-		vPortFree(msg.message);
+		Debug_Message(LOG_INFO, "%s передал %.60s",name, bufferToServerTCP);
 		memset(bufferToServerTCP, 0, MAX_LEN_TCP_MESSAGE);
 		read(socket, bufferToServerTCP, MAX_LEN_TCP_MESSAGE);
 		len=strlen(bufferToServerTCP);
 		if (len < 1) {
 			Debug_Message(LOG_ERROR, "%s Ошибка чтения ",name);
-			BadTCP(buffer, socket, ETHFromServerSecQueue);
+			BadTCP(socket, ETHFromServerSecQueue);
 			return;
 		}
 		deleteEnter(bufferToServerTCP);
 		msg.message = pvPortMalloc(len);
 		if(msg.message==NULL){
 			Debug_Message(LOG_ERROR, "%s Нет памяти %d",name,len);
-			BadTCP(buffer, socket, ETHFromServerSecQueue);
+			BadTCP(socket, ETHFromServerSecQueue);
 			return;
 		}
 		msg.error = TRANSPORT_OK;
 		memcpy(msg.message,bufferToServerTCP,len);
 		osMessageQueuePut(ETHFromServerSecQueue, &msg, 0, 0);
-		Debug_Message(LOG_INFO, "%s принял %.20s",name, msg.message);
+		Debug_Message(LOG_INFO, "%s принял %.60s",name, msg.message);
 	}
 }

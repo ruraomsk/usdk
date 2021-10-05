@@ -21,8 +21,10 @@ DaySet daySet;
 DeviceStatus deviceStatus;
 TCPSet mainTCP;
 TCPSet secondTCP;
+TimeDevice timeDevice;
+GPSSet gpsSet;
+CameraSet cameraSet;
 
-osMutexId_t commonMutex;
 // @formatter:off
 CommonData cD[] = {
 		{ .name = "phases", .data = (void *)&phasesSet, .size = sizeof(PhasesSet), .sbuf = 1200, .to_json =	&PhasesSetToJsonString, .from_json = &PhasesSetFromJsonString,.by_default=&clearPhasesSet},
@@ -31,14 +33,16 @@ CommonData cD[] = {
 		{ .name = "week", .data = (void *)&weekSet, .size = sizeof(WeekSet), .sbuf = 1200, .to_json =&WeekSetToJsonString, .from_json = &WeekSetFromJsonString,.by_default=&clearWeekSet},
 		{ .name = "day", .data = (void *)&daySet, .size =sizeof(DaySet), .sbuf = 4800, .to_json = &DaySetToJsonString, .from_json = &DaySetFromJsonString,.by_default=&clearDaySet },
 		{ .name = "setup", .data = (void *)&deviceStatus, .size =sizeof(DeviceStatus), .sbuf = 1200, .to_json = &DeviceStatusToJsonString, .from_json = &DeviceStatusFromJsonString,.by_default=&clearDeviceStatus},
-		{ .name="cmain",.data=(void *)&mainTCP,.size=sizeof(TCPSet),.sbuf=80,.to_json=&TCPSetToJsonString,.from_json=&TCPSetFromJsonString,.by_default=&clearTCPSet},
-		{ .name="csec",.data=(void *)&secondTCP,.size=sizeof(TCPSet),.sbuf=80,.to_json=&TCPSetToJsonString,.from_json=&TCPSetFromJsonString,.by_default=&clearTCPSet},
+		{ .name = "cmain",.data=(void *)&mainTCP,.size=sizeof(TCPSet),.sbuf=80,.to_json=&TCPSetToJsonString,.from_json=&TCPSetFromJsonString,.by_default=&clearTCPSet},
+		{ .name = "csec",.data=(void *)&secondTCP,.size=sizeof(TCPSet),.sbuf=80,.to_json=&TCPSetToJsonString,.from_json=&TCPSetFromJsonString,.by_default=&clearTCPSet},
+		{ .name = "tdev",.data=(void *)&timeDevice,.size=sizeof(TimeDevice),.sbuf=80,.to_json=&TimeDeviceToJsonString,.from_json=&TimeDeviceFromJsonString,.by_default=&clearTimeDevice},
+		{ .name = "gps",.data=(void *)&gpsSet,.size=sizeof(GPSSet),.sbuf=80,.to_json=&GPSSetToJsonString,.from_json=&GPSSetFromJsonString,.by_default=&clearGPSSet},
+		{ .name = "cam",.data=(void *)&cameraSet,.size=sizeof(CameraSet),.sbuf=4800,.to_json=&CameraSetToJsonString,.from_json=&CameraSetFromJsonString,.by_default=&clearCameraSet},
 		{ .name =NULL }
 };
 // @formatter:on
 char path [ 60 ];
 void initCommonData(void) {
-	commonMutex=osMutexNew(NULL);
 	for (int i = 0;; ++i) {
 		if (cD [ i ].name == NULL) break;
 		snprintf(path, sizeof(path), "set/%s.set", cD [ i ].name);
@@ -57,7 +61,6 @@ void initCommonData(void) {
 }
 int Compare(char *name, void *data) {
 	int result = -1;
-	if (osMutexAcquire(commonMutex, osWaitForever) == osOK) {
 		for (int i = 0;; ++i) {
 			if (cD [ i ].name == NULL) break;
 			if (strcmp(name, cD [ i ].name) == 0) {
@@ -65,13 +68,10 @@ int Compare(char *name, void *data) {
 				break;
 			}
 		}
-		osMutexRelease(commonMutex);
-	}
 	return result;
 }
 bool GetCopy(char *name, void *data) {
 	bool result = false;
-	if (osMutexAcquire(commonMutex, osWaitForever) == osOK) {
 		for (int i = 0;; ++i) {
 			if (cD [ i ].name == NULL) break;
 			if (strcmp(name, cD [ i ].name) == 0) {
@@ -80,13 +80,10 @@ bool GetCopy(char *name, void *data) {
 				break;
 			}
 		}
-		osMutexRelease(commonMutex);
-	}
 	return result;
 }
 bool SetCopy(char *name, const void *data) {
 	bool result = false;
-	if (osMutexAcquire(commonMutex, osWaitForever) == osOK) {
 		for (int i = 0;; ++i) {
 			if (cD [ i ].name == NULL) break;
 			if (strcmp(name, cD [ i ].name) == 0) {
@@ -95,13 +92,10 @@ bool SetCopy(char *name, const void *data) {
 				break;
 			}
 		}
-		osMutexRelease(commonMutex);
-	}
 	return result;
 }
 char* GetJsonString(char *name) {
 	char *result = NULL;
-	if (osMutexAcquire(commonMutex, osWaitForever) == osOK) {
 		for (int i = 0;; ++i) {
 			if (cD [ i ].name == NULL) break;
 			if (strcmp(name, cD [ i ].name) == 0) {
@@ -109,13 +103,10 @@ char* GetJsonString(char *name) {
 				break;
 			}
 		}
-		osMutexRelease(commonMutex);
-	}
 	return result;
 }
 bool SetJsonString(char *name,char* json){
 	bool result = false;
-	if (osMutexAcquire(commonMutex, osWaitForever) == osOK) {
 		for (int i = 0;; ++i) {
 			if (cD [ i ].name == NULL) break;
 			if (strcmp(name, cD [ i ].name) == 0) {
@@ -124,7 +115,5 @@ bool SetJsonString(char *name,char* json){
 				break;
 			}
 		}
-		osMutexRelease(commonMutex);
-	}
 	return result;
 }

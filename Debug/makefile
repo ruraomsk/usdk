@@ -11,6 +11,7 @@ RM := rm -rf
 -include sources.mk
 -include libmodbus/subdir.mk
 -include core_JSON/subdir.mk
+-include UartStream/subdir.mk
 -include USB_DEVICE/Target/subdir.mk
 -include USB_DEVICE/App/subdir.mk
 -include Transport/subdir.mk
@@ -31,6 +32,7 @@ RM := rm -rf
 -include Middlewares/ST/STM32_USB_Device_Library/Class/MSC/Src/subdir.mk
 -include LWIP/Target/subdir.mk
 -include LWIP/App/subdir.mk
+-include GPS/subdir.mk
 -include Files/subdir.mk
 -include FatFs/subdir.mk
 -include Drivers/STM32H7xx_HAL_Driver/Src/subdir.mk

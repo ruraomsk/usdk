@@ -33,7 +33,7 @@
 #include "DeviceLogger.h"
 #include "Transport.h"
 #include "CommonData.h"
-
+#include "Camera.h"
 
 /* USER CODE END Includes */
 
@@ -418,6 +418,7 @@ void StartTCPTransport(void *argument)
 	while (!ReadyFiles) {
 		osDelay(1000);
 	}
+	initCameras();
 	while(1){
 		DeviceLog(SUB_TRANSPORT, "Запускаем Transport");
 		mainTransportLoop();

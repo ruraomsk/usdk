@@ -4,99 +4,134 @@
  *  Created on: Sep 2, 2021
  *      Author: rura
  */
-//#include "lwip.h"
-//#include "DebugLogger.h"
-//#include "Transport.h"
-//#include "sockets.h"
-//#include "Files.h"
-//
-//#include "Camera.h"
-//
-//#define MAX_LEN_CAMERA_MESSAGE 1024
-//int socket = -1;
-//char *buffer = NULL;
-//
-//void initCamera() {
-//
-//}
-//void badCamera() {
-//	vPortFree(buffer);
-//	if (socket < 0)
-//		return;
-//	shutdown(socket, SHUT_RDWR);
-//	close(socket);
-//}
-//int sendAndRecv(){
-//	int err = send(socket, buffer, strlen(buffer), 0);
-//	osDelay(1000);
-//	if (err < 0) {
-//		Debug_Message(LOG_ERROR, "Camera Не смог передать строку %s", buffer);
-//		return -1;
-//	}
-//	memset(buffer, 0, MAX_LEN_CAMERA_MESSAGE);
-//	int len = recv(socket, buffer, MAX_LEN_CAMERA_MESSAGE, 0);
-//	if (len < 2) {
-//		Debug_Message(LOG_ERROR, "Camera Ошибка чтения ");
-//		return -1;
-//	}
-//	if (buffer[len - 2] != '\r' ||buffer[len - 1] != '\n' ) {
-//		Debug_Message(LOG_ERROR, "Camera Неверное завершение строки %s",
-//				buffer);
-//		return -1;
-//	}
-//	buffer[len - 2] = 0;
-//	return strlen(buffer);
-//}
-//void cameraMainLoop() {
-//	struct sockaddr_in srv_addr;
-//	JSON_Value *root = FilesGetJsonString("camera");
-//	JSON_Object *object = json_value_get_object(root);
-//	inet_aton(json_object_get_string(object, "ip"), &srv_addr.sin_addr.s_addr);
-//	srv_addr.sin_family = AF_INET;
-//	srv_addr.sin_port = htons((int ) json_object_get_number(object, "port"));
-//	socket = socket(AF_INET, SOCK_STREAM, 0);
-//	if (socket < 0) {
-//		Debug_Message(LOG_ERROR, "Camera не могу создать сокет %d", errno);
-//		badCamera(buffer, socket);
-//		return;
-//	}
-//	//Устанавливаем тайм ауты
-//	struct timeval tv = { 0, 0 };
-//	tv.tv_sec = 5;
-//	int err = lwip_setsockopt(socket, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv));
-//	tv.tv_sec = 5;
-//	err = lwip_setsockopt(socket, SOL_SOCKET, SO_SNDTIMEO, &tv, sizeof(tv));
-//	err = connect(socket, (struct sockaddr* ) &srv_addr,
-//			sizeof(struct sockaddr_in));
-//	if (err != 0) {
-//		Debug_Message(LOG_ERROR, "Camera нет соединения с сервером %s:%d",
-//				json_object_get_string(object, "ip"),
-//				(int) json_object_get_number(object, "port"));
-//		badCamera();
-//		return;
-//	}
-//	buffer = pvPortMalloc(MAX_LEN_TCP_MESSAGE);
-//	sprintf(buffer, "%s\r\n%s\r\n", json_object_get_string(object, "login"),
-//			json_object_get_string(object, "password"));
-//	if (sendAndRecv() < 0 ) {
-//		badCamera();
-//		return;
-//	}
-//	if (strcasecmp(buffer, "Gamotron like detector with 1 identifier.") != 0) {
-//		Debug_Message(LOG_ERROR,
-//				"Camera неверный логин или пароль для сервера %s:%d",
-//				json_object_get_string(object, "ip"),
-//				(int) json_object_get_number(object, "port"));
-//		badCamera();
-//		return;
-//	}
-//	for(;;){
-//		sprintf(buffer,"gd last\r\n");
-//		if (sendAndRecv()<0){
-//			badCamera();
-//			return;
-//		}
-//		Debug_Message(LOG_INFO,"Пришло %s",buffer);
-//		osDelay((int) json_object_get_number(object, "step")*1000);
-//	}
-//}
+#include "lwip.h"
+#include "sockets.h"
+#include <stdlib.h>
+#include "DebugLogger.h"
+#include "Camera.h"
+#include "CommonData.h"
+
+CameraSet cs;
+char endln[]="\r\n";
+char gs[]="gs\r\n";
+void OneCameraWork(void* arg){
+	int id=*(int*) arg;
+	char buffer[60];
+	int socket=-1;
+	int p=-1;
+	for (int i = 0; i < MAX_CAMERAS; ++i) {
+		if (cs.cameras[i].id==id){
+			p=i;
+			break;
+		}
+	}
+	if(p<0) {
+		Debug_Message(LOG_FATAL, "Не найден ID=%d",id);
+		return;
+	}
+
+	for(;;){
+		osDelay(1000U);
+		while(socket<0) {
+			osDelay(1000U);
+			struct sockaddr_in srv_addr;
+			inet_aton(cs.cameras[p].ip, &srv_addr.sin_addr.s_addr);
+			srv_addr.sin_family = AF_INET;
+			srv_addr.sin_port = htons(cs.cameras[p].port);
+			socket = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+			if (socket < 0) {
+				Debug_Message(LOG_ERROR,"Camera%d Не могу создать сокет %d",id, errno);
+				continue;
+			}
+			int err = connect(socket, (struct sockaddr* ) &srv_addr, sizeof(struct sockaddr_in));
+			if (err != 0) {
+				Debug_Message(LOG_ERROR, "Camera%d Нет соединения ",id);
+				shutdown(socket, SHUT_RDWR);
+				close(socket);
+				socket=-1;
+				continue;
+			}
+			send(socket,cs.cameras[p].login,strlen(cs.cameras[p].login),0);
+			send(socket,endln,strlen(endln),0);
+			send(socket,cs.cameras[p].password,strlen(cs.cameras[p].password),0);
+			send(socket,endln,strlen(endln),0);
+			memset(buffer,0,sizeof(buffer));
+			read(socket,buffer,sizeof(buffer));
+			if(strlen(buffer)==0){
+				Debug_Message(LOG_ERROR, "Camera%d Ошибка чтения ",id);
+				shutdown(socket, SHUT_RDWR);
+				close(socket);
+				socket=-1;
+				continue;
+			}
+			Debug_Message(LOG_INFO, "Camera%d прочитали %s",id,buffer);
+
+		}
+		send(socket,gs,strlen(gs),0);
+		memset(buffer,0,sizeof(buffer));
+		read(socket,buffer,sizeof(buffer));
+		if(strlen(buffer)==0){
+			Debug_Message(LOG_ERROR, "Camera%d Ошибка чтения статистики",id);
+			shutdown(socket, SHUT_RDWR);
+			close(socket);
+			socket=-1;
+			continue;
+		}
+		Debug_Message(LOG_INFO, "Camera%d прочитали %s",id,buffer);
+	}
+
+}
+
+osThreadId_t CamerasHandle;
+const osThreadAttr_t Camera01_attributes = { .name = "Camera01", .stack_size = 2048 * 4, .priority =
+		(osPriority_t) osPriorityLow, };
+const osThreadAttr_t Camera02_attributes = { .name = "Camera02", .stack_size = 2048 * 4, .priority =
+		(osPriority_t) osPriorityLow, };
+const osThreadAttr_t Camera03_attributes = { .name = "Camera03", .stack_size = 2048 * 4, .priority =
+		(osPriority_t) osPriorityLow, };
+const osThreadAttr_t Camera04_attributes = { .name = "Camera04", .stack_size = 2048 * 4, .priority =
+		(osPriority_t) osPriorityLow, };
+const osThreadAttr_t Camera05_attributes = { .name = "Camera05", .stack_size = 2048 * 4, .priority =
+		(osPriority_t) osPriorityLow, };
+const osThreadAttr_t Camera06_attributes = { .name = "Camera06", .stack_size = 2048 * 4, .priority =
+		(osPriority_t) osPriorityLow, };
+const osThreadAttr_t Camera07_attributes = { .name = "Camera07", .stack_size = 2048 * 4, .priority =
+		(osPriority_t) osPriorityLow, };
+const osThreadAttr_t Camera08_attributes = { .name = "Camera08", .stack_size = 2048 * 4, .priority =
+		(osPriority_t) osPriorityLow, };
+const osThreadAttr_t Camera09_attributes = { .name = "Camera09", .stack_size = 2048 * 4, .priority =
+		(osPriority_t) osPriorityLow, };
+const osThreadAttr_t Camera10_attributes = { .name = "Camera10", .stack_size = 2048 * 4, .priority =
+		(osPriority_t) osPriorityLow, };
+const osThreadAttr_t Camera11_attributes = { .name = "Camera11", .stack_size = 2048 * 4, .priority =
+		(osPriority_t) osPriorityLow, };
+const osThreadAttr_t Camera12_attributes = { .name = "Camera12", .stack_size = 2048 * 4, .priority =
+		(osPriority_t) osPriorityLow, };
+const osThreadAttr_t Camera13_attributes = { .name = "Camera13", .stack_size = 2048 * 4, .priority =
+		(osPriority_t) osPriorityLow, };
+const osThreadAttr_t Camera14_attributes = { .name = "Camera14", .stack_size = 2048 * 4, .priority =
+		(osPriority_t) osPriorityLow, };
+const osThreadAttr_t Camera15_attributes = { .name = "Camera15", .stack_size = 2048 * 4, .priority =
+		(osPriority_t) osPriorityLow, };
+const osThreadAttr_t Camera16_attributes = { .name = "Camera16", .stack_size = 2048 * 4, .priority =
+		(osPriority_t) osPriorityLow, };
+// @formatter:off
+
+const osThreadAttr_t* catr[16]={
+							&Camera01_attributes,&Camera02_attributes,&Camera03_attributes,&Camera04_attributes,&Camera05_attributes,
+							&Camera06_attributes,&Camera07_attributes,&Camera08_attributes,&Camera09_attributes,&Camera10_attributes,
+							&Camera11_attributes,&Camera12_attributes,&Camera13_attributes,&Camera14_attributes,&Camera15_attributes,
+							&Camera16_attributes
+						 	 	 };
+// @formatter:on
+
+void initCameras() {
+	osDelay(1000U);
+	GetCopy("cam", &cs);
+	for (int i = 0; i < 1; ++i) {
+		if (cs.cameras[i].id!=0){
+			CamerasHandle=osThreadNew(OneCameraWork, (void *)&cs.cameras[i].id , catr[i]);
+		}
+	}
+}
+

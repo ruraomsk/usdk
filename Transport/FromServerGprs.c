@@ -46,7 +46,7 @@ void FromServerGPRSLoop(void) {
 	buffer[len + 1] = 0;
 	err = send(socket, buffer, strlen(buffer), 0);
 	if (err < 0) {
-		Debug_Message(LOG_ERROR, "%s Не смог передать строку %.20s",name, buffer);
+		Debug_Message(LOG_ERROR, "%s Не смог передать строку %.60s",name, buffer);
 		BadGPRS(buffer, socket, GPRSFromServerQueue);
 		return;
 	}
@@ -74,7 +74,7 @@ void FromServerGPRSLoop(void) {
 		deleteEnter(buffer);
 		setGoodGPRS(true);
 		setToServerGPRSStart(true);
-		Debug_Message(LOG_INFO, "%s принял %.20s",name, buffer);
+		Debug_Message(LOG_INFO, "%s принял %.60s",name, buffer);
 		buffer[len - 1] = 0;
 		MessageFromQueue msg;
 		msg.message = buffer;
@@ -96,12 +96,12 @@ void FromServerGPRSLoop(void) {
 		msg.message[len + 1] = 0;
 		err = send(socket, msg.message, strlen(msg.message), 0);
 		if (err < 0) {
-			Debug_Message(LOG_ERROR, "%s Не смог передать строку ответа %.20s",name, msg.message);
+			Debug_Message(LOG_ERROR, "%s Не смог передать строку ответа %.60s",name, msg.message);
 			BadGPRS(buffer, socket, GPRSFromServerQueue);
 			vPortFree(msg.message);
 			return;
 		}
-		Debug_Message(LOG_INFO, "%s передал %.20s", name,msg.message);
+		Debug_Message(LOG_INFO, "%s передал %.60s", name,msg.message);
 		vPortFree(msg.message);
 	}
 }
