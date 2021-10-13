@@ -18,7 +18,7 @@
 static SubNames DevLogWork[] = { { SUB_TRANSPORT, "Транспорт", NULL }, { SUB_FILES, "Файл", NULL }, { SUB_END, "\0",
 NULL } };
 RingBuffer *devicelogs;
-DeviceLoggerMessage msg, oldmsg;
+DeviceLoggerMessage dlmsg, oldmsg;
 void DeviceLogInit() {
 	devicelogs = newRingBuffer(CAPACITY_MESSAGES, sizeof(DeviceLoggerMessage));
 	if (devicelogs == NULL) {
@@ -80,6 +80,7 @@ void saveRingBufferToFile() {
 	UnlockFiles();
 }
 void DeviceLog(char subsytem, char *fmt, ...) {
+	return;
 		SubNames *subName = getSubsystem(subsytem);
 		if (subName != NULL) {
 			va_list ap;
@@ -90,10 +91,10 @@ void DeviceLog(char subsytem, char *fmt, ...) {
 			//Если такое сообщение уже посылали то и нефиг его записывать
 			if (strcmp(subName->lastMessage, message) != 0) {
 				strcpy(subName->lastMessage, message);
-				msg.time = GetDeviceTime();
-				msg.subsystem = subsytem;
-				strcpy(msg.message, message);
-				while (RingBufferTryWrite(devicelogs, (void*) &msg) != RINGBUFFER_OK) {
+				dlmsg.time = GetDeviceTime();
+				dlmsg.subsystem = subsytem;
+				strcpy(dlmsg.message, message);
+				while (RingBufferTryWrite(devicelogs, (void*) &dlmsg) != RINGBUFFER_OK) {
 					Debug_Message(LOG_INFO, "Лог устройства полон");
 					saveRingBufferToFile();
 					Debug_Message(LOG_INFO, "Лог устройства сохранен в файл");
@@ -106,11 +107,11 @@ void DeviceLog(char subsytem, char *fmt, ...) {
 }
 // Создает в строке json один элемент массива сообщения если вернули false значит не осталось сообщений
 bool LogLineToJsonSubString(js_write *w) {
-		if (RingBufferTryRead(devicelogs, (void*) &msg) != RINGBUFFER_OK) {
+		if (RingBufferTryRead(devicelogs, (void*) &dlmsg) != RINGBUFFER_OK) {
 			js_write_value_start(w, "");
-			js_write_int(w, "time", msg.time);
-			js_write_string(w, "sub",getSubsystem(msg.subsystem)->name );
-			js_write_string(w, "mess",msg.message);
+			js_write_int(w, "time", dlmsg.time);
+			js_write_string(w, "sub",getSubsystem(dlmsg.subsystem)->name );
+			js_write_string(w, "mess",dlmsg.message);
 			js_write_value_end(w);
 			return true;
 		}

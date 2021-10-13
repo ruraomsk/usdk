@@ -20,9 +20,13 @@ void clearSetupDK(SetupDK *setupDK) {
 	setupDK->preset = false;
 }
 
-char* SetupDKToJsonString(SetupDK *setupDK,size_t size){
+char* SetupDKToJsonString(SetupDK *setupDK,char* buffer,size_t size){
 	js_write jswork;
-	js_write_start(&jswork, size);
+	if (buffer==NULL){
+		js_write_start(&jswork, size);
+	} else {
+		js_write_static(&jswork,buffer,size);
+	}
 	js_write_int(&jswork, "dkn", setupDK->dkn);
 	js_write_int(&jswork, "tmaxf", setupDK->tmaxf);
 	js_write_int(&jswork, "tminf", setupDK->tminf);

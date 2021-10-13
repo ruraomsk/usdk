@@ -14,14 +14,18 @@
 void clearTCPSet(TCPSet *t) {
 	strcpy(t->ip,"192.168.115.159");
 	t->port=2093;
-	t->tread=1;
-	t->twrite=1;
+	t->tread=2;
+	t->twrite=2;
 	t->tque=30;
 }
 
-char* TCPSetToJsonString(TCPSet *t,size_t size){
+char* TCPSetToJsonString(TCPSet *t,char* buffer,size_t size){
 	js_write jswork;
-	js_write_start(&jswork, size);
+	if (buffer==NULL){
+		js_write_start(&jswork, size);
+	} else {
+		js_write_static(&jswork,buffer,size);
+	}
 	js_write_int(&jswork, "port", t->port);
 	js_write_int(&jswork, "tread", t->tread);
 	js_write_int(&jswork, "twrite", t->twrite);

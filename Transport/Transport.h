@@ -11,14 +11,17 @@
 #include "cmsis_os.h"
 #include <stddef.h>
 #include <stdbool.h>
+#include "service.h"
 
+#define STEP_TCP 				1000
+#define STEP_GPRS 				20000
 
-#define STEP_TCP 				3000
-#define STEP_GPRS 				3000
-
-#define DeviceBufferSize 1024
-#define MAX_LEN_TCP_MESSAGE 1024
+#define DeviceBufferSize 2400
+#define MAX_LEN_TCP_MESSAGE 12400
 #define STEP_CONTROL 100
+
+#define LenConnectString 100
+
 
 #define SIGNAL_NEED_KEEP_ALIVE 1
 
@@ -33,10 +36,12 @@ typedef struct {
 	char *message;
 } MessageFromQueue;
 
-void mainTransportLoop(void);
+void TransportStart(void);
 
-char* makeConnectString(const size_t buffersize,char *typestring);
-void BadTCP(int socket,osMessageQueueId_t que);
+char* makeConnectString(char *typestring);
+
+
+void BadTCP(int socket);
 void BadGPRS(char *buffer,int socket,osMessageQueueId_t que);
 void setGoodTCP(bool v);
 void setGoodGPRS(bool v);
@@ -46,10 +51,13 @@ void setToServerTCPStart(bool v);
 void setToServerGPRSStart(bool v);
 void setGPRSNeed(bool v);
 
+char* doGiveCommand(char* buffer);
+
 void setTimeoutForChanel(int interval);
 
-void deleteEnter(void *buffer);
-void TechExchange(void *argument);
+void prepareConnectMessage(char* message);
+
+void deleteEnter(char* buffer);
 void FromServerTCPLoop(void);
 void ToServerTCPLoop(void);
 void FromServerGPRSLoop(void);

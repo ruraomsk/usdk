@@ -51,26 +51,18 @@
 #define LWIP_DHCP 1
 /*----- Default value in ETH configuration GUI in CubeMx: 1524 -----*/
 #define ETH_RX_BUFFER_SIZE 1524
-/*----- Default Value for MEMP_NUM_TCP_PCB: 5 ---*/
-#define MEMP_NUM_TCP_PCB 20
+/*----- Default Value for LWIP_MPU_COMPATIBLE: 0 ---*/
+#define LWIP_MPU_COMPATIBLE 1
 /*----- Default Value for SYS_LIGHTWEIGHT_PROT: 1 ---*/
 #define SYS_LIGHTWEIGHT_PROT 0
 /*----- Value in opt.h for MEM_ALIGNMENT: 1 -----*/
 #define MEM_ALIGNMENT 4
-/*----- Default Value for MEM_SIZE: 1600 ---*/
-#define MEM_SIZE 16000
 /*----- Default Value for H7 devices: 0x30044000 -----*/
 #define LWIP_RAM_HEAP_POINTER 0x30044000
-/*----- Default Value for MEMP_NUM_RAW_PCB: 4 ---*/
-#define MEMP_NUM_RAW_PCB 8
 /*----- Value in opt.h for MEMP_NUM_SYS_TIMEOUT: (LWIP_TCP + IP_REASSEMBLY + LWIP_ARP + (2*LWIP_DHCP) + LWIP_AUTOIP + LWIP_IGMP + LWIP_DNS + (PPP_SUPPORT*6*MEMP_NUM_PPP_PCB) + (LWIP_IPV6 ? (1 + LWIP_IPV6_REASS + LWIP_IPV6_MLD) : 0)) -*/
 #define MEMP_NUM_SYS_TIMEOUT 5
-/*----- Default Value for MEMP_NUM_API_MSG: 8 ---*/
-#define MEMP_NUM_API_MSG 16
 /*----- Value supported for H7 devices: 1 -----*/
 #define LWIP_SUPPORT_CUSTOM_PBUF 1
-/*----- Default Value for PBUF_POOL_SIZE: 16 ---*/
-#define PBUF_POOL_SIZE 32
 /*----- Value in opt.h for LWIP_ETHERNET: LWIP_ARP || PPPOE_SUPPORT -*/
 #define LWIP_ETHERNET 1
 /*----- Value in opt.h for LWIP_DNS_SECURE: (LWIP_DNS_SECURE_RAND_XID | LWIP_DNS_SECURE_NO_MULTIPLE_OUTSTANDING | LWIP_DNS_SECURE_RAND_SRC_PORT) -*/
@@ -107,14 +99,14 @@
 #define DEFAULT_ACCEPTMBOX_SIZE 6
 /*----- Default Value for LWIP_TCPIP_TIMEOUT: 0 ---*/
 #define LWIP_TCPIP_TIMEOUT 1
-/*----- Default Value for LWIP_NETCONN_FULLDUPLEX: 0 ---*/
-#define LWIP_NETCONN_FULLDUPLEX 1
 /*----- Default Value for LWIP_SO_SNDTIMEO: 0 ---*/
 #define LWIP_SO_SNDTIMEO 1
 /*----- Default Value for LWIP_SO_RCVTIMEO: 0 ---*/
 #define LWIP_SO_RCVTIMEO 1
+/*----- Default Value for LWIP_SO_SNDRCVTIMEO_NONSTANDARD: 0 ---*/
+#define LWIP_SO_SNDRCVTIMEO_NONSTANDARD 1
 /*----- Value in opt.h for RECV_BUFSIZE_DEFAULT: INT_MAX -----*/
-#define RECV_BUFSIZE_DEFAULT 20000
+#define RECV_BUFSIZE_DEFAULT 2000000000
 /*----- Default Value for LWIP_TCP_CLOSE_TIMEOUT_MS_DEFAULT: 20000 ---*/
 #define LWIP_TCP_CLOSE_TIMEOUT_MS_DEFAULT 2000
 /*----- Value in opt.h for LWIP_STATS: 1 -----*/
@@ -125,8 +117,6 @@
 #define CHECKSUM_GEN_UDP 0
 /*----- Value in opt.h for CHECKSUM_GEN_TCP: 1 -----*/
 #define CHECKSUM_GEN_TCP 0
-/*----- Value in opt.h for CHECKSUM_GEN_ICMP: 1 -----*/
-#define CHECKSUM_GEN_ICMP 0
 /*----- Value in opt.h for CHECKSUM_GEN_ICMP6: 1 -----*/
 #define CHECKSUM_GEN_ICMP6 0
 /*----- Value in opt.h for CHECKSUM_CHECK_IP: 1 -----*/
@@ -135,8 +125,6 @@
 #define CHECKSUM_CHECK_UDP 0
 /*----- Value in opt.h for CHECKSUM_CHECK_TCP: 1 -----*/
 #define CHECKSUM_CHECK_TCP 0
-/*----- Value in opt.h for CHECKSUM_CHECK_ICMP: 1 -----*/
-#define CHECKSUM_CHECK_ICMP 0
 /*----- Value in opt.h for CHECKSUM_CHECK_ICMP6: 1 -----*/
 #define CHECKSUM_CHECK_ICMP6 0
 /*-----------------------------------------------------------------------------*/

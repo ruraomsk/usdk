@@ -24,7 +24,10 @@ typedef struct {
 
 void DeviceTimeInit();
 time_t GetDeviceTime(void);
+
 char* TimeToString(time_t time);
+char* ShortTimeToString(time_t time);
+
 void UpdateDeviceTime(time_t time);
 int nanosleep (const struct timespec *tw, struct timespec *tr);
 void CallbackQueue(void* arg);

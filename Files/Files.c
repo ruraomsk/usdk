@@ -19,11 +19,12 @@ void LockFiles(void) {
 }
 void UnlockFiles(void) {
 }
-FATFS fs;
 FIL fil;
 UINT bw;
 FRESULT result;
+FATFS fs;
 BYTE work[FF_MAX_SS];
+
 static int ReadyFS=0;
 int FilesInit() {
 	//Проверим создана ли уже файловая система
@@ -59,6 +60,9 @@ char* FilesGetJsonString(char *filename) {
 			return NULL;
 		}
 		f_read(&fil, buffer, size, &bw);
+		if (bw !=size ) {
+			Debug_Message(LOG_ERROR, "Ошибка чтения файл %s %d байт", filename, bw);
+		}
 		f_close(&fil);
 		return buffer;
 }

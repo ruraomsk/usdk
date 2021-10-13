@@ -10,16 +10,22 @@
 #include "CommonData.h"
 
 void clearCameraSet(CameraSet *c) {
-	OneCamera empty={.ip="192.168.115.168",.port=8441,.id=12,.login="admin",.password="admin",.chanels=8};
+	OneCameraConn empty={.ip="192.168.115.168",.port=8441,.id=12,.login="admin",.password="admin",.chanels=8};
 //	c->cameras[0] = empty;
 	for (int i = 0; i < MAX_CAMERAS; ++i) {
-		empty.id=i+1; //i+1
+		if (i<MAX_CAMERAS) empty.id=i+1;
+		else empty.id=0;//i+1
 		c->cameras[i] = empty;
 	}
 }
-char* CameraSetToJsonString(CameraSet *c,size_t size) {
+char* CameraSetToJsonString(CameraSet *c,char* buffer,size_t size) {
 	js_write jswork;
-	js_write_start(&jswork, size);
+	if (buffer==NULL){
+		js_write_start(&jswork, size);
+	} else {
+		js_write_static(&jswork,buffer,size);
+	}
+
 	js_write_array_start(&jswork, "cameras");
 	for (int i = 0; i < MAX_CAMERAS ; ++i) {
 		js_write_value_start(&jswork, "");

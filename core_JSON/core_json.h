@@ -351,6 +351,7 @@ typedef struct {
 } js_read;
 
 JSONStatus_t js_write_start(js_write *work,size_t size);
+JSONStatus_t js_write_static(js_write *work, char* buffer,size_t size);
 JSONStatus_t js_write_end(js_write *work);
 void js_write_free(js_write *work);
 JSONStatus_t js_write_int(js_write *w,char *name,int value);

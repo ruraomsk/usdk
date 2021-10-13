@@ -20,6 +20,18 @@ JSONStatus_t js_write_start(js_write *work, size_t size) {
 	*work->pos++ = '{';
 	return JsonSuccess;
 }
+JSONStatus_t js_write_static(js_write *work, char* buffer,size_t size) {
+	if(buffer==NULL){
+		work->start = pvPortMalloc(size );
+	} else {
+		work->start =buffer;
+	}
+	if (work->start == NULL) return JSONNotMemory;
+	work->pos = work->start;
+	work->size = size;
+	*work->pos++ = '{';
+	return JsonSuccess;
+}
 JSONStatus_t js_verify(js_write *w){
 	if ((w->pos-w->start)>=w->size) return JSONNotMemory;
 	return JsonSuccess;

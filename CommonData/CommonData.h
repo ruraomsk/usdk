@@ -7,15 +7,19 @@
 
 #ifndef COMMONDATA_H_
 #define COMMONDATA_H_
+
 #include <stdint.h>
 #include <stdbool.h>
+#include "CommonExt.h"
+
 #define MAX_WEEKS 	32
 #define MAX_DAYS  	12
 #define MAX_LINES 	12
-#define MAX_PKS   	64
-#define MAX_PHASES 	32
-#define MAX_STAGES 	64
+#define MAX_PKS   	24
+#define MAX_PHASES 	24
+#define MAX_STAGES 	24
 #define MAX_CAMERAS 16
+
 
 //Описание одной фазы со всеми нужными вещами
 typedef struct {
@@ -26,6 +30,7 @@ typedef struct {
 typedef struct {
 	DefinePhase defPhase [ MAX_PHASES ];
 } PhasesSet;
+#define PhasesName "phases"
 
 //Настройки ДК
 typedef struct {
@@ -38,6 +43,7 @@ typedef struct {
 	int tprom;
 	bool preset;
 } SetupDK;
+#define SetupDKName "setdk"
 
 //Один месяц из годового плана
 typedef struct {
@@ -48,6 +54,7 @@ typedef struct {
 typedef struct {
 	OneMonth months [ 12 ];
 } YearSet;
+#define YearSetName "year"
 //Одна строка недельного плана
 typedef struct {
 	uint8_t num;
@@ -57,7 +64,7 @@ typedef struct {
 typedef struct {
 	OneWeek weeks [ MAX_WEEKS ];
 } WeekSet;
-
+#define WeekSetName "week"
 //Одна строка суточного плана
 typedef struct {
 	int time;
@@ -73,7 +80,7 @@ typedef struct {
 typedef struct {
 	OneDay days [ MAX_DAYS ];
 } DaySet;
-
+#define DaySetName "day"
 //Одна строка плана координации
 typedef struct {
 	int line;
@@ -88,17 +95,18 @@ typedef struct {
 //Один план координации
 typedef struct {
 	int pk;
-	int tru;
+	int tpu;
 	bool razlen;
 	int tc;
 	int shift;
+	bool twot;
 	Stage stages [ MAX_STAGES ];
 } SetPk;
 //Все планы координации устройства
 typedef struct {
 	SetPk pks [ MAX_PKS ];
 } AllPks;
-
+#define AllPksName "pks"
 
 //Настройки устройства
 typedef struct {
@@ -107,7 +115,9 @@ typedef struct {
 	bool Gprs;
 	bool Gps;
 	bool Usb;
+	bool Camera;
 } DeviceStatus;
+#define DeviceStatusName "devst"
 //Настройки обмена по TCP
 typedef struct {
 	char ip [ 20 ];
@@ -116,21 +126,15 @@ typedef struct {
 	int twrite;
 	int tque;
 }TCPSet;
+#define TCPSetMainName "cmain"
+#define TCPSetSecName "csec"
+
 //Настройка временных зон
 typedef struct {
 	int TimeZone;
 	bool Summer;
 }TimeDevice;
-
-//Состояние GPS
-typedef struct{
-	bool Ok;		//	Все исправно
-	bool E01;		// 	Нет связи с приемником
-	bool E02;		//	Ошибка CRC
-	bool E03;		//  Нет валидного времени
-	bool E04;		//  Мало спутников
-	bool Seek;		//  Поиск спутников после включения
-} GPSSet;
+#define TimeDeviceName "tdev"
 // Описание одной подключенной камеры
 typedef struct {
 	char ip [ 20 ];		//json:"ip"
@@ -139,13 +143,15 @@ typedef struct {
 	char login[20];		//json:"login"
 	char password[20];	//json:"password"
 	int chanels;
-}OneCamera;
+}OneCameraConn;
 // Все Подключенные камеры
 typedef struct {
-	OneCamera cameras[MAX_CAMERAS];		//json:"cameras"
+	OneCameraConn cameras[MAX_CAMERAS];		//json:"cameras"
 }CameraSet;
-
+#define CameraSetName "cam"
 void initCommonData(void);
+void SaveAllChanged(void);
+
 int getWeekDay(WeekSet *weekSet, int week, int day);
 OneDay* getOneDay(DaySet *daySet, int num);
 int getYearDay(YearSet *yearSet, int month, int day);
@@ -154,7 +160,7 @@ DefinePhase* getPhase(PhasesSet *phasesSet, int num);
 int Compare(char *name, void *data);
 bool GetCopy(char *name, void *data);
 bool SetCopy(char *name, const void *data);
-char* GetJsonString(char *name);
+char* GetJsonString(char *name,char* buffer);
 bool SetJsonString(char *name,char* json);
-bool SetJsonString(char *name,char* json);
+char* GetNameFile(char* name);
 #endif /* COMMONDATA_H_ */

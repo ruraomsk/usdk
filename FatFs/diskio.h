@@ -93,6 +93,7 @@ int RAM_disk_ioctl(	BYTE pdrv,	BYTE cmd,void *buff);
 int MMC_disk_ioctl(BYTE pdrv,	BYTE cmd,void *buff);
 int USB_disk_ioctl(BYTE pdrv,	BYTE cmd,void *buff);
 
+
 #ifdef __cplusplus
 }
 #endif

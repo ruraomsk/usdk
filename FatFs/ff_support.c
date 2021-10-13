@@ -5,6 +5,7 @@
  *      Author: rura
  */
 #include "diskio.h"
+#include "DeviceTime.h"
 #include <string.h>
 #define RAM_SIZE_SECTOR 512
 #define RAM_COUNT_SECTORS 300
@@ -92,4 +93,11 @@ int MMC_disk_ioctl(BYTE pdrv,	BYTE cmd,void *buff) {
 int USB_disk_ioctl(BYTE pdrv,	BYTE cmd,void *buff) {
 	return RES_ERROR;
 }
+DWORD get_fattime(){
+	time_t time=GetDeviceTime();
+	struct tm *u;
+	u = localtime(&time);
+	return ((DWORD)(u->tm_year - 1980) << 25 | (DWORD)u->tm_mon << 21 | (DWORD)u->tm_mday << 16);
+}
+
 

@@ -16,9 +16,13 @@ void clearTimeDevice(TimeDevice *t) {
 	t->Summer=false;
 }
 
-char* TimeDeviceToJsonString(TimeDevice *t,size_t size){
+char* TimeDeviceToJsonString(TimeDevice *t,char* buffer,size_t size){
 	js_write jswork;
-	js_write_start(&jswork, size);
+	if (buffer==NULL){
+		js_write_start(&jswork, size);
+	} else {
+		js_write_static(&jswork,buffer,size);
+	}
 	js_write_int(&jswork, "tz", t->TimeZone);
 	js_write_int(&jswork, "summer", t->Summer);
 	js_write_end(&jswork);

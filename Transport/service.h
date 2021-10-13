@@ -11,7 +11,12 @@
 #include "core_json.h"
 #include <stdbool.h>
 
-char* MessageConfirm (void);
-char* MessageStatusDevice(void);
-
+char* MessageConfirm (char *buffer);
+char* MessageStatusDevice(char *buffer);
+int sendString(int socket,void* buffer,size_t len);
+int readString(int socket,char* buffer,size_t len,int timeout);
+bool isConnect(char* message);
+bool isGive_Me_Status(char* message);
+void prepareGiveMeStatus(char *message);
+void setTimeoutForChanel(int interval);
 #endif /* SERVICE_H_ */

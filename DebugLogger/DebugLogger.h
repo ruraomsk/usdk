@@ -15,7 +15,7 @@ typedef struct {
 	int Level;
 	time_t time;
 	size_t size;
-	char Buffer[128];
+	char Buffer[80];
 } DebugLoggerMsg;
 void Debug_Init(void);
 void Debug_Message(int level,char *fmt,...);

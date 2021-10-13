@@ -28,9 +28,38 @@ OneDay* getOneDay(DaySet *daySet, int num) {
 	}
 	return NULL;
 }
-char* DaySetToJsonString(DaySet *daySet,size_t size) {
+char* OneDayToJsonString(DaySet *daySet,int day,char* buffer,size_t size) {
 	js_write jswork;
-	js_write_start(&jswork, size);
+	if (buffer==NULL){
+		js_write_start(&jswork, size);
+	} else {
+		js_write_static(&jswork,buffer,size);
+	}
+	for (int i = 0; i < MAX_DAYS ; ++i) {
+		if(daySet->days[i].num!=day) continue;
+		js_write_int(&jswork, "num",daySet->days[i].num );
+		js_write_int(&jswork, "count",daySet->days[i].count );
+		js_write_array_start(&jswork, "lines");
+		for (int j = 0; j < MAX_LINES; ++j) {
+			js_write_value_start(&jswork, "");
+			js_write_int(&jswork, "npk",daySet->days[i].lines[j].npk );
+			js_write_int(&jswork, "hour",daySet->days[i].lines[j].time/60 );
+			js_write_int(&jswork, "min",daySet->days[i].lines[j].time%60 );
+			js_write_value_end(&jswork);
+		}
+		js_write_array_end(&jswork);
+	}
+	js_write_end(&jswork);
+	return jswork.start;
+}
+
+char* DaySetToJsonString(DaySet *daySet,char* buffer,size_t size) {
+	js_write jswork;
+	if (buffer==NULL){
+		js_write_start(&jswork, size);
+	} else {
+		js_write_static(&jswork,buffer,size);
+	}
 	js_write_array_start(&jswork, "daysets");
 	for (int i = 0; i < MAX_DAYS ; ++i) {
 		js_write_value_start(&jswork, "");

@@ -65,14 +65,7 @@ UART_HandleTypeDef huart4;
 osThreadId_t MainTaskHandle;
 const osThreadAttr_t MainTask_attributes = {
   .name = "MainTask",
-  .stack_size = 2048 * 4,
-  .priority = (osPriority_t) osPriorityRealtime,
-};
-/* Definitions for TCPTransport */
-osThreadId_t TCPTransportHandle;
-const osThreadAttr_t TCPTransport_attributes = {
-  .name = "TCPTransport",
-  .stack_size = 2048 * 4,
+  .stack_size = 4096 * 4,
   .priority = (osPriority_t) osPriorityRealtime,
 };
 /* USER CODE BEGIN PV */
@@ -86,7 +79,6 @@ static void MPU_Config(void);
 static void MX_GPIO_Init(void);
 static void MX_UART4_Init(void);
 void StartMainTask(void *argument);
-void StartTCPTransport(void *argument);
 
 /* USER CODE BEGIN PFP */
 
@@ -164,9 +156,6 @@ int main(void)
   /* Create the thread(s) */
   /* creation of MainTask */
   MainTaskHandle = osThreadNew(StartMainTask, NULL, &MainTask_attributes);
-
-  /* creation of TCPTransport */
-  TCPTransportHandle = osThreadNew(StartTCPTransport, NULL, &TCPTransport_attributes);
 
   /* USER CODE BEGIN RTOS_THREADS */
 	/* add threads, ... */
@@ -396,36 +385,13 @@ void StartMainTask(void *argument)
   DeviceLogInit();
   initCommonData();
   ReadyFiles=1;
+  TransportStart();
   Debug_Message(LOG_INFO, "Система к работе готова");
   for (;;) {
 	  DebugLoggerLoop();
 	  osDelay(1000);
   }
   /* USER CODE END 5 */
-}
-
-/* USER CODE BEGIN Header_StartTCPTransport */
-/**
-* @brief Function implementing the TCPTransport thread.
-* @param argument: Not used
-* @retval None
-*/
-/* USER CODE END Header_StartTCPTransport */
-void StartTCPTransport(void *argument)
-{
-  /* USER CODE BEGIN StartTCPTransport */
-  /* Infinite loop */
-	while (!ReadyFiles) {
-		osDelay(1000);
-	}
-	initCameras();
-	while(1){
-		DeviceLog(SUB_TRANSPORT, "Запускаем Transport");
-		mainTransportLoop();
-		osDelay(1000);
-		DeviceLog(SUB_TRANSPORT, "Вышли из Transport");
-	}
-  /* USER CODE END StartTCPTransport */
 }
 
 /* MPU Configuration */

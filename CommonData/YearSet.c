@@ -28,9 +28,13 @@ int getYearDay(YearSet *yearSet, int month, int day) {
 	}
 	return 0;
 }
-char* YearSetToJsonString(YearSet *yearSet,size_t size) {
+char* YearSetToJsonString(YearSet *yearSet,char* buffer,size_t size) {
 	js_write jswork;
-	js_write_start(&jswork, size);
+	if (buffer==NULL){
+		js_write_start(&jswork, size);
+	} else {
+		js_write_static(&jswork,buffer,size);
+	}
 	js_write_array_start(&jswork, "monthset");
 	for (int i = 0; i < 12 ; ++i) {
 		js_write_value_start(&jswork, "");
@@ -43,6 +47,26 @@ char* YearSetToJsonString(YearSet *yearSet,size_t size) {
 		js_write_value_end(&jswork);
 	}
 	js_write_array_end(&jswork);
+	js_write_end(&jswork);
+	return jswork.start;
+}
+char* OneMonthToJsonString(YearSet *yearSet,int month,char* buffer,size_t size){
+	js_write jswork;
+	if (buffer==NULL){
+		js_write_start(&jswork, size);
+	} else {
+		js_write_static(&jswork,buffer,size);
+	}
+	for (int i = 0; i < 12 ; ++i) {
+		if(month!=yearSet->months[i].num) continue;
+		js_write_byte(&jswork, "num", yearSet->months[i].num);
+		js_write_array_start(&jswork, "days");
+		for (int j = 0; j < 31; ++j) {
+			js_write_byte(&jswork,"",yearSet->months[i].weeks[j]);
+		}
+		js_write_array_end(&jswork);
+		break;
+	}
 	js_write_end(&jswork);
 	return jswork.start;
 }

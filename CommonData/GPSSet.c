@@ -16,9 +16,13 @@ void clearGPSSet(GPSSet *g){
 	g->E04=false;
 	g->Seek=false;
 }
-char* GPSSetToJsonString(GPSSet *g,size_t size){
+char* GPSSetToJsonString(GPSSet *g,char* buffer,size_t size){
 	js_write jswork;
-	js_write_start(&jswork, size);
+	if (buffer==NULL){
+		js_write_start(&jswork, size);
+	} else {
+		js_write_static(&jswork,buffer,size);
+	}
 	js_write_bool(&jswork, "Ok", g->Ok);
 	js_write_bool(&jswork, "E01", g->E01);
 	js_write_bool(&jswork, "E02", g->E02);

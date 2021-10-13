@@ -8,48 +8,44 @@
 #include <sockets.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdio.h>
 #include "Transport.h"
 #include "Files.h"
 #include "core_json.h"
 #include "CommonData.h"
-extern int TCPError;
-extern int GPRSError;
-extern int GPRSNeed;			//Готовность работы GPRS если есть
-extern int ToServerTCPStart;
-extern int ToServerGPRSStart;
+extern bool TCPError;
+extern bool GPRSError;
+extern bool GPRSNeed;			//Готовность работы GPRS если есть
+extern bool ToServerTCPStart;
+extern bool ToServerGPRSStart;
 
-void deleteEnter(void* buffer){
-	char*ptr=strchr(buffer,'\n');
-	if(ptr!=NULL) *ptr=0;
+void deleteEnter(char *buffer) {
+	char *ptr = strchr(buffer, '\n');
+	if (ptr != NULL) *ptr = 0;
 }
-char* makeConnectString(const size_t buffersize, char *typestring) {
+char* makeConnectString(char *typestring) {
 	char *result = NULL;
-		DeviceStatus devStatus;
-		js_write w;
-		GetCopy("setup", &devStatus);
-		js_write_start(&w, buffersize);
-		js_write_value_start(&w, "connect");
-		js_write_int(&w, "id", devStatus.ID);
-		js_write_string(&w, "type", typestring);
-		js_write_value_end(&w);
-		js_write_end(&w);
-		result = w.start;
+	DeviceStatus devStatus;
+	GetCopy(DeviceStatusName, &devStatus);
+	result = pvPortMalloc(LenConnectString);
+	if (result == NULL) return result;
+	snprintf(result, LenConnectString, "connect,%d,%s", devStatus.ID, typestring);
 	return result;
 }
 void setToServerTCPStart(bool v) {
-		ToServerTCPStart = v;
+	ToServerTCPStart = v;
 }
 void setToServerGPRSStart(bool v) {
-		ToServerGPRSStart = v;
+	ToServerGPRSStart = v;
 }
 void setGPRSNeed(bool v) {
-		GPRSNeed = v;
+	GPRSNeed = v;
 }
 void setGoodTCP(bool v) {
-		TCPError = v;
+	TCPError = v;
 }
 void setGoodGPRS(bool v) {
-		GPRSError = v;
+	GPRSError = v;
 }
 bool isGoodTCP() {
 	return TCPError;
@@ -57,13 +53,9 @@ bool isGoodTCP() {
 bool isGoodGPRS() {
 	return GPRSError;
 }
-void BadTCP(int socket, osMessageQueueId_t que) {
+void BadTCP(int socket) {
 	setGoodTCP(false);
 	setToServerTCPStart(false);
-	MessageFromQueue msg={.message=NULL};
-	msg.error = TRANSPORT_ERROR;
-	msg.message = NULL;
-	osMessageQueuePut(que, &msg, 0, 0);
 	if (socket < 0) return;
 	shutdown(socket, SHUT_RDWR);
 	close(socket);
@@ -72,7 +64,7 @@ void BadGPRS(char *buffer, int socket, osMessageQueueId_t que) {
 	setGoodGPRS(false);
 	setToServerGPRSStart(false);
 	vPortFree(buffer);
-	MessageFromQueue msg={.message=NULL};
+	MessageFromQueue msg = { .message = NULL };
 	msg.error = TRANSPORT_ERROR;
 	msg.message = NULL;
 	osMessageQueuePut(que, &msg, 0, 0);

@@ -27,9 +27,32 @@ int getWeekDay(WeekSet *weekSet, int week, int day) {
 	}
 	return 0;
 }
-char* WeekSetToJsonString(WeekSet *weekSet,size_t size) {
+char* OneWeekToJsonString(WeekSet *weekSet,int week,char* buffer,size_t size){
 	js_write jswork;
-	js_write_start(&jswork, size);
+	if (buffer==NULL){
+		js_write_start(&jswork, size);
+	} else {
+		js_write_static(&jswork,buffer,size);
+	}
+	for (int i = 0; i < MAX_WEEKS ; ++i) {
+		if(weekSet->weeks[i].num!=week) continue;
+		js_write_byte(&jswork, "num",weekSet->weeks[i].num );
+		js_write_array_start(&jswork, "days");
+		for (int j = 0; j < 7; ++j) {
+			js_write_byte(&jswork,"",weekSet->weeks[i].days[j]);
+		}
+		js_write_array_end(&jswork);
+	}
+	js_write_end(&jswork);
+	return jswork.start;
+}
+char* WeekSetToJsonString(WeekSet *weekSet,char* buffer,size_t size) {
+	js_write jswork;
+	if (buffer==NULL){
+		js_write_start(&jswork, size);
+	} else {
+		js_write_static(&jswork,buffer,size);
+	}
 	js_write_array_start(&jswork, "wsets");
 	for (int i = 0; i < MAX_WEEKS ; ++i) {
 		js_write_value_start(&jswork, "");

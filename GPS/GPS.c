@@ -14,7 +14,7 @@ const osThreadAttr_t GPSCtl_attributes = { .name = "GPS", .stack_size = 1024 * 4
 		(osPriority_t) osPriorityLow, };
 void StartGPSCtl (void *arg){
 	GPSSet gps;
-	GetCopy("gps", &gps);
+	GetCopy(GPSSetName, &gps);
 	//INIT GPS
 	Debug_Message(LOG_INFO, "Модуль GPS запущен");
 	for (;;){
@@ -26,7 +26,7 @@ void StartGPSCtl (void *arg){
 
 void GPS_Init() {
 	DeviceStatus ds;
-	GetCopy("setup",&ds);
+	GetCopy(DeviceStatusName,&ds);
 	if (ds.Gps) {
 		GPSCtlHandle = osThreadNew(StartGPSCtl, NULL, &GPSCtl_attributes);
 	}

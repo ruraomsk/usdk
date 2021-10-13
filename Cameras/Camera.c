@@ -10,128 +10,133 @@
 #include "DebugLogger.h"
 #include "Camera.h"
 #include "CommonData.h"
+#include "DeviceTime.h"
 
-CameraSet cs;
-char endln[]="\r\n";
-char gs[]="gs\r\n";
-void OneCameraWork(void* arg){
-	int id=*(int*) arg;
-	char buffer[60];
-	int socket=-1;
-	int p=-1;
-	for (int i = 0; i < MAX_CAMERAS; ++i) {
-		if (cs.cameras[i].id==id){
-			p=i;
-			break;
-		}
-	}
-	if(p<0) {
-		Debug_Message(LOG_FATAL, "Не найден ID=%d",id);
-		return;
-	}
-
-	for(;;){
+osTimerId_t TickerCamera=NULL;
+osMessageQueueId_t CameraTickerQueue=NULL;
+osMessageQueueId_t CameraStatSignalQueue=NULL;
+CamerasOcup zo;
+char bufferCamera [ 120 ];
+int idCamera;
+CallBackParam Cameraparam={.Signal=CAMERA_READ_ZONE};
+bool SendToCamera(int sock,char* buffer,int len){
+	if (send(sock, buffer, len, 0) < 0) {
+		Debug_Message(LOG_ERROR, "Camera%d Ошибка записи ", idCamera);
+		shutdown(sock, SHUT_RDWR);
+		close(sock);
 		osDelay(1000U);
-		while(socket<0) {
-			osDelay(1000U);
-			struct sockaddr_in srv_addr;
-			inet_aton(cs.cameras[p].ip, &srv_addr.sin_addr.s_addr);
-			srv_addr.sin_family = AF_INET;
-			srv_addr.sin_port = htons(cs.cameras[p].port);
-			socket = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
-			if (socket < 0) {
-				Debug_Message(LOG_ERROR,"Camera%d Не могу создать сокет %d",id, errno);
-				continue;
-			}
-			int err = connect(socket, (struct sockaddr* ) &srv_addr, sizeof(struct sockaddr_in));
-			if (err != 0) {
-				Debug_Message(LOG_ERROR, "Camera%d Нет соединения ",id);
-				shutdown(socket, SHUT_RDWR);
-				close(socket);
-				socket=-1;
-				continue;
-			}
-			send(socket,cs.cameras[p].login,strlen(cs.cameras[p].login),0);
-			send(socket,endln,strlen(endln),0);
-			send(socket,cs.cameras[p].password,strlen(cs.cameras[p].password),0);
-			send(socket,endln,strlen(endln),0);
-			memset(buffer,0,sizeof(buffer));
-			read(socket,buffer,sizeof(buffer));
-			if(strlen(buffer)==0){
-				Debug_Message(LOG_ERROR, "Camera%d Ошибка чтения ",id);
-				shutdown(socket, SHUT_RDWR);
-				close(socket);
-				socket=-1;
-				continue;
-			}
-			Debug_Message(LOG_INFO, "Camera%d прочитали %s",id,buffer);
-
-		}
-		send(socket,gs,strlen(gs),0);
-		memset(buffer,0,sizeof(buffer));
-		read(socket,buffer,sizeof(buffer));
-		if(strlen(buffer)==0){
-			Debug_Message(LOG_ERROR, "Camera%d Ошибка чтения статистики",id);
-			shutdown(socket, SHUT_RDWR);
-			close(socket);
-			socket=-1;
-			continue;
-		}
-		Debug_Message(LOG_INFO, "Camera%d прочитали %s",id,buffer);
+		return false;
 	}
-
+	return true;
 }
+void CameraWork(void *arg) {
+	char endln [ ] = "\r\n";
+	char gs [ ] = "gs\r\n";
+	char gdlast[]="gd last\r\n";
+	int tout=10;
+	CameraSet cs;
+	GetCopy(CameraSetName, &cs);
+	int sock = -1;
+	CameraTickerQueue=osMessageQueueNew(6, sizeof(uint32_t), NULL);
+	Cameraparam.QueueId=CameraTickerQueue;
+	TickerCamera=osTimerNew(CallbackQueue, osTimerPeriodic, &Cameraparam, NULL);
+	osTimerStart(TickerCamera, 1000U);
+	for (;;) {
+		time_t start;
+		int command=0;
+		vTaskDelay(CAMERA_STEP_CONTROL);
+		osMessageQueueGet(CameraTickerQueue,&command,NULL,tout);
+		if(command==0) continue;
+//		Debug_Message(LOG_INFO, "Camera начинаем цикл");
+		start=GetDeviceTime();
+		for (int p = 0; p < MAX_CAMERAS; ++p) {
+			if (cs.cameras [ p ].id != 0) {
+				osDelay(20);
+				int id = cs.cameras [ p ].id;
+				idCamera=id;
+				struct sockaddr_in srv_addr;
+				inet_aton(cs.cameras [ p ].ip, &srv_addr.sin_addr.s_addr);
+				srv_addr.sin_family = AF_INET;
+				srv_addr.sin_port = htons(cs.cameras [ p ].port);
+				sock = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+				if (sock < 0) {
+					Debug_Message(LOG_ERROR, "Camera%d Не могу создать сокет %d", id, errno);
+					osDelay(1000U);
+					continue;
+				}
+				struct timeval tv = { 0, 0 };
+				tv.tv_sec = 1;
+				lwip_setsockopt(sock, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv));
+				tv.tv_sec = 1;
+				lwip_setsockopt(sock, SOL_SOCKET, SO_SNDTIMEO, &tv, sizeof(tv));
 
-osThreadId_t CamerasHandle;
-const osThreadAttr_t Camera01_attributes = { .name = "Camera01", .stack_size = 2048 * 4, .priority =
-		(osPriority_t) osPriorityLow, };
-const osThreadAttr_t Camera02_attributes = { .name = "Camera02", .stack_size = 2048 * 4, .priority =
-		(osPriority_t) osPriorityLow, };
-const osThreadAttr_t Camera03_attributes = { .name = "Camera03", .stack_size = 2048 * 4, .priority =
-		(osPriority_t) osPriorityLow, };
-const osThreadAttr_t Camera04_attributes = { .name = "Camera04", .stack_size = 2048 * 4, .priority =
-		(osPriority_t) osPriorityLow, };
-const osThreadAttr_t Camera05_attributes = { .name = "Camera05", .stack_size = 2048 * 4, .priority =
-		(osPriority_t) osPriorityLow, };
-const osThreadAttr_t Camera06_attributes = { .name = "Camera06", .stack_size = 2048 * 4, .priority =
-		(osPriority_t) osPriorityLow, };
-const osThreadAttr_t Camera07_attributes = { .name = "Camera07", .stack_size = 2048 * 4, .priority =
-		(osPriority_t) osPriorityLow, };
-const osThreadAttr_t Camera08_attributes = { .name = "Camera08", .stack_size = 2048 * 4, .priority =
-		(osPriority_t) osPriorityLow, };
-const osThreadAttr_t Camera09_attributes = { .name = "Camera09", .stack_size = 2048 * 4, .priority =
-		(osPriority_t) osPriorityLow, };
-const osThreadAttr_t Camera10_attributes = { .name = "Camera10", .stack_size = 2048 * 4, .priority =
-		(osPriority_t) osPriorityLow, };
-const osThreadAttr_t Camera11_attributes = { .name = "Camera11", .stack_size = 2048 * 4, .priority =
-		(osPriority_t) osPriorityLow, };
-const osThreadAttr_t Camera12_attributes = { .name = "Camera12", .stack_size = 2048 * 4, .priority =
-		(osPriority_t) osPriorityLow, };
-const osThreadAttr_t Camera13_attributes = { .name = "Camera13", .stack_size = 2048 * 4, .priority =
-		(osPriority_t) osPriorityLow, };
-const osThreadAttr_t Camera14_attributes = { .name = "Camera14", .stack_size = 2048 * 4, .priority =
-		(osPriority_t) osPriorityLow, };
-const osThreadAttr_t Camera15_attributes = { .name = "Camera15", .stack_size = 2048 * 4, .priority =
-		(osPriority_t) osPriorityLow, };
-const osThreadAttr_t Camera16_attributes = { .name = "Camera16", .stack_size = 2048 * 4, .priority =
-		(osPriority_t) osPriorityLow, };
-// @formatter:off
-
-const osThreadAttr_t* catr[16]={
-							&Camera01_attributes,&Camera02_attributes,&Camera03_attributes,&Camera04_attributes,&Camera05_attributes,
-							&Camera06_attributes,&Camera07_attributes,&Camera08_attributes,&Camera09_attributes,&Camera10_attributes,
-							&Camera11_attributes,&Camera12_attributes,&Camera13_attributes,&Camera14_attributes,&Camera15_attributes,
-							&Camera16_attributes
-						 	 	 };
-// @formatter:on
-
-void initCameras() {
-	osDelay(1000U);
-	GetCopy("cam", &cs);
-	for (int i = 0; i < 1; ++i) {
-		if (cs.cameras[i].id!=0){
-			CamerasHandle=osThreadNew(OneCameraWork, (void *)&cs.cameras[i].id , catr[i]);
+				int err = connect(sock, (struct sockaddr* ) &srv_addr, sizeof(struct sockaddr_in));
+				if (err != 0) {
+					Debug_Message(LOG_ERROR, "Camera%d Нет соединения ", id);
+					shutdown(sock, SHUT_RDWR);
+					close(sock);
+					osDelay(1000U);
+					continue;
+				}
+				if (!SendToCamera(sock, cs.cameras [ p ].login, strlen(cs.cameras [ p ].login))) {
+					continue;
+				}
+				if (!SendToCamera(sock, endln, strlen(endln))){
+					continue;
+				}
+				if (!SendToCamera(sock, cs.cameras [ p ].password, strlen(cs.cameras [ p ].password))){
+					continue;
+				}
+				if (!SendToCamera(sock, endln, strlen(endln))){
+					continue;
+				}
+				memset(bufferCamera, 0, sizeof(bufferCamera));
+				read(sock, bufferCamera, sizeof(bufferCamera));
+				if (strlen(bufferCamera) == 0) {
+					Debug_Message(LOG_ERROR, "Camera%d Ошибка чтения ", id);
+					shutdown(sock, SHUT_RDWR);
+					close(sock);
+					osDelay(1000U);
+					continue;
+				}
+//					Debug_Message(LOG_INFO, "Camera%d прочитали %s", id, buffer);
+				if (command==CAMERA_READ_ZONE){
+					if (!SendToCamera(sock, gs, strlen(gs))){
+						continue;
+					}
+					memset(bufferCamera, 0, sizeof(bufferCamera));
+					read(sock, bufferCamera, sizeof(bufferCamera));
+					if (strlen(bufferCamera) == 0) {
+						Debug_Message(LOG_ERROR, "Camera%d Ошибка чтения зон", id);
+						shutdown(sock, SHUT_RDWR);
+						close(sock);
+						osDelay(1000U);
+						continue;
+					}
+					appendOneZone(bufferCamera, &zo, p, id);
+				}
+				if (command==CAMERA_STATISTICS){
+					if (!SendToCamera(sock, gdlast, strlen(gdlast))){
+						continue;
+					}
+					while(true){
+						memset(bufferCamera, 0, sizeof(bufferCamera));
+						read(sock, bufferCamera, sizeof(bufferCamera));
+						if (strlen(bufferCamera) == 0) {
+							Debug_Message(LOG_ERROR, "Camera%d Ошибка чтения зон", id);
+							shutdown(sock, SHUT_RDWR);
+							close(sock);
+							osDelay(1000U);
+							continue;
+						}
+					}
+				}
+//				Debug_Message(LOG_INFO, "Camera%d прочитали %s", id, buffer);
+				shutdown(sock, SHUT_RDWR);
+				close(sock);
+			}
 		}
+		Debug_Message(LOG_INFO, "Camera закончили цикл %s за %d сек",command==CAMERA_READ_ZONE?"чтения зон":"сбора статистики",DiffTimeSecond(start));
 	}
 }
 
