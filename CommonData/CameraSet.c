@@ -46,7 +46,7 @@ void CameraSetFromJsonString(char *root, CameraSet *c) {
 	js_read jcameras;
 	js_read objcamera;
 	js_read_start(&jswork, root);
-	js_read_array(&jswork, &jcameras, "cameras");
+	if (js_read_array(&jswork, &jcameras, "cameras")!=JsonSuccess) return;
 	for (int i = 0; i < MAX_CAMERAS; ++i) {
 		if (js_read_array_object(&jcameras, i, &objcamera)!=JsonSuccess) break;
 		js_read_int(&objcamera, "id",&c->cameras[i].id);

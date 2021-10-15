@@ -70,13 +70,29 @@ char* OneMonthToJsonString(YearSet *yearSet,int month,char* buffer,size_t size){
 	js_write_end(&jswork);
 	return jswork.start;
 }
+bool OneMonthFromJsonString(char* root, YearSet *yearSet,int month){
+	js_read jswork,jslines;
+	js_read_start(&jswork, root);
+	for (int i = 0; i < 12; ++i) {
+		if(yearSet->months[i].num!=month) continue;
+		js_read_byte(&jswork, "num",&yearSet->months[i].num );
+		if(js_read_array(&jswork, &jslines, "days")!=JsonSuccess) return false;
+		int j=0;
+		while(js_read_array_byte(&jslines, j, &yearSet->months[i].weeks[j])==JsonSuccess){
+			j++;
+			if(j>30) break;
+		}
+		return true;
+	}
+	return false;
+}
 void YearSetFromJsonString(char* root, YearSet *yearSet) {
 	js_read jswork;
 	js_read jsdays;
 	js_read jsmonth;
 	js_read jslines;
 	js_read_start(&jswork, root);
-	js_read_array(&jswork, &jsdays, "monthsets");
+	if(js_read_array(&jswork, &jsdays, "monthsets")!=JsonSuccess) return;
 	for (int i = 0; i < 12; ++i) {
 		if (js_read_array_object(&jsdays, i, &jsmonth)!=JsonSuccess) break;
 		js_read_byte(&jsmonth, "num",&yearSet->months[i].num );

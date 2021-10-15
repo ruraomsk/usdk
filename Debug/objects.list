@@ -162,6 +162,7 @@
 "./MobusTCP/ClientModbusTCP.o"
 "./MobusTCP/ServerModbusTCP.o"
 "./Transport/Commander.o"
+"./Transport/ControlData.o"
 "./Transport/FromServerGprs.o"
 "./Transport/FromServerTCP.o"
 "./Transport/ToServerGprs.o"

@@ -20,13 +20,6 @@ bool ToServerGPRSStart = false;
 bool TCPError = false;
 bool GPRSError = false;
 
-//Очереди для Ethernet
-//Очереди от основной программы управления
-osMessageQueueId_t ChangeStatus;
-osMessageQueueId_t ToServerQueue;
-osMessageQueueId_t FromServerQueue;
-osMessageQueueId_t ToServerSecQueue;
-osMessageQueueId_t FromServerSecQueue;
 
 typedef StaticTask_t osStaticThreadDef_t;
 
@@ -92,25 +85,23 @@ void noETHandGPRS() {
 }
 void StartToServerTCP(void *argument) {
 	while (1) {
-		while (!(ToServerTCPStart && mainConnect)) {
+		while (!ToServerTCPStart ) {
 			osDelay(STEP_CONTROL);
 		}
-		Debug_Message(LOG_INFO, "Запускаем ToServerTCP");
+//		Debug_Message(LOG_INFO, "Запускаем ToServerTCP");
 		ToServerTCPLoop();
-		setToServerTCPStart(false);
-		setGoodTCP(false);
-		Debug_Message(LOG_INFO, "остановился ToServerTCP");
+//		Debug_Message(LOG_INFO, "остановился ToServerTCP");
 		osDelay(STEP_TCP);
 
 	}
 }
 void StartFromServerTCP(void *argument) {
 	while (1) {
-		Debug_Message(LOG_INFO, "Запускаем FromServerTCP");
+//		Debug_Message(LOG_INFO, "Запускаем FromServerTCP %d %d",osThreadGetStackSpace(FromServerTCPHandle),osThreadGetStackSpace(ToServerTCPHandle));
 		FromServerTCPLoop();
 		setToServerTCPStart(false);
 		setGoodTCP(false);
-		Debug_Message(LOG_INFO, "остановился FromServerTCP");
+//		Debug_Message(LOG_INFO, "остановился FromServerTCP %d %d",osThreadGetStackSpace(FromServerTCPHandle),osThreadGetStackSpace(ToServerTCPHandle));
 		osDelay(STEP_TCP);
 
 	}
@@ -120,10 +111,10 @@ void StartToServerGPRS(void *argument) {
 		while (!(ToServerGPRSStart )) {
 			osDelay(STEP_GPRS);
 		}
-		Debug_Message(LOG_INFO, "Запускаем ToServerGPRS");
+//		Debug_Message(LOG_INFO, "Запускаем ToServerGPRS");
 		ToServerGPRSLoop();
 		setGoodGPRS(false);
-		Debug_Message(LOG_INFO, "остановился ToServerGPRS");
+//		Debug_Message(LOG_INFO, "остановился ToServerGPRS");
 		osDelay(STEP_GPRS);
 	}
 }
@@ -144,12 +135,6 @@ void StartFromServerGPRS(void *argument) {
 
 void TransportStart(void) {
 
-	ToServerQueue = osMessageQueueNew(6, sizeof(MessageFromQueue), NULL);
-	FromServerQueue = osMessageQueueNew(6, sizeof(MessageFromQueue), NULL);
-	ToServerSecQueue = osMessageQueueNew(6, sizeof(MessageFromQueue),
-	NULL);
-	FromServerSecQueue = osMessageQueueNew(6, sizeof(MessageFromQueue),
-	NULL);
 
 	//0 - Переход от GPRS на Ethernet
 	//1 - Переход от Ethernet на GPRS
@@ -169,7 +154,6 @@ void TransportStart(void) {
 	secTCP.port = 2094;
 	SetCopy(TCPSetSecName, &secTCP);
 	setTimeoutForChanel(20);
-	ChangeStatus = osMessageQueueNew(6, sizeof(int), NULL);
 	GetCopy(DeviceStatusName, &devStatus);
 	if (!devStatus.Ethertnet && devStatus.Gprs) {setGPRSNeed(true);setGoodTCP(false);}
 	if (devStatus.Ethertnet && !devStatus.Gprs) {setGPRSNeed(false);};
@@ -180,7 +164,7 @@ void TransportStart(void) {
 		FromServerTCPHandle = osThreadNew(StartFromServerTCP, NULL, &FromServerTCP_attributes);
 
 		/* creation of ToServerTCP */
-//		ToServerTCPHandle = osThreadNew(StartToServerTCP, NULL, &ToServerTCP_attributes);
+		ToServerTCPHandle = osThreadNew(StartToServerTCP, NULL, &ToServerTCP_attributes);
 	}
 	if (devStatus.Gprs) {
 		setGoodGPRS(false);

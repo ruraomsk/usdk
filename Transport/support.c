@@ -19,6 +19,47 @@ extern bool GPRSNeed;			//Готовность работы GPRS если ест
 extern bool ToServerTCPStart;
 extern bool ToServerGPRSStart;
 
+bool MakeReplay(bool *conn,char* buffer,char* name){
+		if (!*conn && isConnect(buffer)) {
+			prepareConnectMessage(buffer);
+			MessageConfirm(buffer);
+			*conn = true;
+			return true;
+		}
+		if (!*conn && !isConnect(buffer)) {
+			Debug_Message(LOG_ERROR, "%s ошибка подключения", name);
+			return false;
+		}
+		if (isGive_Me_Status(buffer)) {
+			prepareGiveMeStatus(buffer);
+			MessageStatusDevice(buffer);
+			return true;
+		}
+		if(isControlCommand(buffer)){
+			if(!doControlCommand(buffer)){
+				Debug_Message(LOG_ERROR, "%s Неизвестная команда управления %s", name,buffer);
+				strcpy(buffer,"unknown set-you");
+			}
+			return true;
+		}
+		if(isGiveMeCommand(buffer)){
+			if (doGiveCommand(buffer) == NULL) {
+				Debug_Message(LOG_ERROR, "%s Неизвестная команда чтения %s", name,buffer);
+				strcpy(buffer,"unknown give-me");
+			}
+			return true;
+		}
+		if(isSetYouCommand(buffer)){
+			if (!doSetCommand(buffer)) {
+				Debug_Message(LOG_ERROR, "%s Неизвестная команда записи %s", name,buffer);
+				strcpy(buffer,"unknown set-you");
+			} else strcpy(buffer,"ok");
+			return true;
+		}
+		Debug_Message(LOG_ERROR, "%s Неизвестная команда %s", name,buffer);
+		strcpy(buffer,"bad message");
+		return true;
+}
 void deleteEnter(char *buffer) {
 	char *ptr = strchr(buffer, '\n');
 	if (ptr != NULL) *ptr = 0;
@@ -57,8 +98,14 @@ void BadTCP(int socket) {
 	setGoodTCP(false);
 	setToServerTCPStart(false);
 	if (socket < 0) return;
-	shutdown(socket, SHUT_RDWR);
-	close(socket);
+	int err=shutdown(socket, SHUT_RDWR);
+	if(err!=0) {
+		Debug_Message(LOG_ERROR, "shutdown %d",errno);
+	}
+	err=close(socket);
+	if(err!=0) {
+		Debug_Message(LOG_ERROR, "close socket %d",errno);
+	}
 }
 void BadGPRS(char *buffer, int socket, osMessageQueueId_t que) {
 	setGoodGPRS(false);

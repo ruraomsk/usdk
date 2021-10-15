@@ -25,56 +25,62 @@ typedef struct {
 }CommonData;
 
 
-void clearSetupDK(SetupDK *setupDK);
-char *SetupDKToJsonString(SetupDK *setupDK,char* buffer,size_t size);
-void SetupDKFromJsonString(char* root, SetupDK *setupDK);
+void clearSetupDK(void *setupDK);
+char *SetupDKToJsonString(void *setupDK,char* buffer,size_t size);
+void SetupDKFromJsonString(char* root, void *setupDK);
 
-void clearWeekSet(WeekSet *weekSet);
-char WeekSetToJsonString(WeekSet *weekSet,char* buffer,size_t size);
-void WeekSetFromJsonString(char* root, WeekSet *weekSet);
-char* OneWeekToJsonString(WeekSet *weekSet,int week,char* buffer,size_t size);
+void clearWeekSet(void *weekSet);
+char WeekSetToJsonString(void *weekSet,char* buffer,size_t size);
+void WeekSetFromJsonString(char* root, void *weekSet);
+char* OneWeekToJsonString(void *weekSet,int week,char* buffer,size_t size);
+bool OneWeekFromJsonString(char* root, WeekSet *weekSet,int week);
 
-void clearDaySet(DaySet *daySet);
-char* DaySetToJsonString(DaySet *daySet,char* buffer,size_t size);
-void DaySetFromJsonString(char *root, DaySet *daySet);
-char* OneDayToJsonString(DaySet *daySet,int day,char* buffer,size_t size);
+void clearDaySet(void *daySet);
+char* DaySetToJsonString(void *daySet,char* buffer,size_t size);
+void DaySetFromJsonString(char *root, void *daySet);
+char* OneDayToJsonString(void *daySet,int day,char* buffer,size_t size);
+bool OneDayFromJsonString(char *root, DaySet *daySet,int day);
 
-void clearPhasesSet(PhasesSet* phasesSet);
-char* PhasesSetToJsonString(PhasesSet *phasesSet,char* buffer,size_t size);
-void PhasesSetFromJsonString(char *root, PhasesSet *phasesSet);
+void clearPhasesSet(void* phasesSet);
+char* PhasesSetToJsonString(void *phasesSet,char* buffer,size_t size);
+void PhasesSetFromJsonString(char *root, void *phasesSet);
+char* OnePhaseToJsonString(void *phasesSet,int phase,char* buffer,size_t size);
+bool OnePhaseFromJsonString(char *root, PhasesSet *phasesSet,int phase);
 
-void clearYearSet(YearSet *yearSet);
-char* YearSetToJsonString(YearSet *yearSet,char* buffer,size_t size);
-void YearSetFromJsonString(char* root, YearSet *yearSet);
-char* OneMonthToJsonString(YearSet *yearSet,int month,char* buffer,size_t size);
+void clearYearSet(void *yearSet);
+char* YearSetToJsonString(void *yearSet,char* buffer,size_t size);
+void YearSetFromJsonString(char* root, void *yearSet);
+char* OneMonthToJsonString(void *yearSet,int month,char* buffer,size_t size);
+bool OneMonthFromJsonString(char* root, YearSet *yearSet,int month);
 
-void clearDeviceStatus(DeviceStatus *ds);
-char* DeviceStatusToJsonString(DeviceStatus *ds,char* buffer,size_t size);
-void DeviceStatusFromJsonString(char *root, DeviceStatus *ds);
+void clearDeviceStatus(void *ds);
+char* DeviceStatusToJsonString(void *ds,char* buffer,size_t size);
+void DeviceStatusFromJsonString(char *root, void *ds);
 
-void clearTCPSet(TCPSet *t);
-char* TCPSetToJsonString(TCPSet *t,char* buffer,size_t size);
-void TCPSetFromJsonString(char *root, TCPSet *t);
+void clearTCPSet(void *t);
+char* TCPSetToJsonString(void *t,char* buffer,size_t size);
+void TCPSetFromJsonString(char *root, void *t);
 
-void clearTimeDevice(TimeDevice *t);
-char* TimeDeviceToJsonString(TimeDevice *t,char* buffer,size_t size);
-void TimeDeviceFromJsonString(char *root, TimeDevice *t);
+void clearTimeDevice(void *t);
+char* TimeDeviceToJsonString(void *t,char* buffer,size_t size);
+void TimeDeviceFromJsonString(char *root, void *t);
 
-void clearGPSSet(GPSSet *g);
-char* GPSSetToJsonString(GPSSet *g,char* buffer,size_t size);
-void GPSSetFromJsonString(char *root, GPSSet *g);
+void clearGPSSet(void *g);
+char* GPSSetToJsonString(void *g,char* buffer,size_t size);
+void GPSSetFromJsonString(char *root, void *g);
 
-void clearCameraSet(CameraSet *c);
-char* CameraSetToJsonString(CameraSet *c,char* buffer,size_t size);
-void CameraSetFromJsonString(char *root, CameraSet *c);
+void clearCameraSet(void *c);
+char* CameraSetToJsonString(void *c,char* buffer,size_t size);
+void CameraSetFromJsonString(char *root, void *c);
 
-void clearAllPks(AllPks *c);
-char* AllPksToJsonString(AllPks *c,char* buffer,size_t size);
-void AllPksFromJsonString(char *root, AllPks *c);
-char* OnePKToJsonString(AllPks *apks,int pk,char* buffer,size_t size);
+void clearAllPks(void *c);
+char* AllPksToJsonString(void *c,char* buffer,size_t size);
+void AllPksFromJsonString(char *root, void *c);
+char* OnePKToJsonString(void *apks,int pk,char* buffer,size_t size);
+bool OnePKFromJsonString(char *root, AllPks *apks,int pk);
 
-void clearNowState(NowState *ns);
-char* NowStateToJsonString(NowState *ns,char* buffer,size_t size);
-void NowStateFromJsonString(char *root, NowState *ns);
+void clearNowState(void *ns);
+char* NowStateToJsonString(void *ns,char* buffer,size_t size);
+void NowStateFromJsonString(char *root, void *ns);
 
 #endif /* COMMON_PRIVATE_H_ */

@@ -9,8 +9,7 @@
 char bufferFromServerTCP [ MAX_LEN_TCP_MESSAGE ];
 void FromServerTCPLoop(void) {
 	char name [ ] = "FromTCP";
-	int sock;
-	sock = -1;
+	int sock = -1;
 	bool connTcp = false;
 	char *buff = NULL;
 	TCPSet tcpSet;
@@ -27,14 +26,16 @@ void FromServerTCPLoop(void) {
 		return;
 	}
 	err = connect(sock, (struct sockaddr* ) &srv_addr, sizeof(struct sockaddr_in));
-	if (err != 0) {
+	if (err < 0) {
 		Debug_Message(LOG_ERROR, "%s Нет соединения с сервером", name);
 		BadTCP(sock);
 		return;
 	}
-
+	Debug_Message(LOG_INFO, "%s Соеденился с сервером %d", name,sock);
 	buff = makeConnectString("ETH");
-	err = sendString(sock, buff, strlen(buff));
+	strcpy(bufferFromServerTCP,buff);
+	vPortFree(buff);
+	err = sendString(sock, bufferFromServerTCP, strlen(bufferFromServerTCP));
 	if (err < 0) {
 		Debug_Message(LOG_ERROR, "%s Не смог передать строку %.60s", name, buff);
 		BadTCP(sock);
@@ -46,48 +47,41 @@ void FromServerTCPLoop(void) {
 	for (;;) {
 		GetCopy(TCPSetMainName, &tcpSet);
 		memset(bufferFromServerTCP, 0, sizeof(bufferFromServerTCP));
-		Debug_Message(LOG_INFO, "%s Встал на прием ", name);
+//		Debug_Message(LOG_INFO, "%s Встал на прием ", name);
+		setToServerTCPStart(true);
+		setGoodTCP(true);
+		setGPRSNeed(false);
 		readString(sock, bufferFromServerTCP, sizeof(bufferFromServerTCP), tcpSet.tque);
-		time_t startCycle = GetDeviceTime();
 		int len = strlen(bufferFromServerTCP);
 		if (len < 1) {
-			Debug_Message(LOG_ERROR, "%s Ошибка чтения ", name);
-			BadTCP(sock);
-			return;
-		}
-		deleteEnter(bufferFromServerTCP);
-		Debug_Message(LOG_INFO, "%s принял %.60s", name, bufferFromServerTCP);
-		while (true) {
-			if (!connTcp && isConnect(bufferFromServerTCP)) {
-				prepareConnectMessage(bufferFromServerTCP);
-				MessageConfirm(bufferFromServerTCP);
-				connTcp = true;
-				break;
-			}
-			if (!connTcp && !isConnect(bufferFromServerTCP)) {
-				Debug_Message(LOG_ERROR, "%s ошибка подключения", name);
+			Debug_Message(LOG_ERROR, "%s Ошибка чтения  %d", name,errno);
+			if(errno!=11)	{
 				BadTCP(sock);
 				return;
 			}
-			if (isGive_Me_Status(bufferFromServerTCP)) {
-				prepareGiveMeStatus(bufferFromServerTCP);
-				MessageStatusDevice(bufferFromServerTCP);
-				break;
-			}
-			char* message;
-			message = doGiveCommand(bufferFromServerTCP);
-			if (message == NULL) {
-				Debug_Message(LOG_ERROR, "%s Неизвестная команда", name);
-			}
-			break;
+			errno=0;
+			strcpy(bufferFromServerTCP,"repeat again\n");
 		}
-		Debug_Message(LOG_INFO, "%s получил %d для передачи %.60s", name, strlen(bufferFromServerTCP), bufferFromServerTCP);
+		setToServerTCPStart(true);
+		setGoodTCP(true);
+		setGPRSNeed(false);
+		deleteEnter(bufferFromServerTCP);
+		if(!MakeReplay(&connTcp, bufferFromServerTCP,name)){
+			BadTCP(sock);
+			return;
+		}
+		osDelay(STEP_CONTROL);
+		setToServerTCPStart(true);
+		setGoodTCP(true);
+		setGPRSNeed(false);
 		err = sendString(sock, bufferFromServerTCP, strlen(bufferFromServerTCP));
 		if (err < 0) {
 			Debug_Message(LOG_ERROR, "%s Не смог передать строку ответа %.60s", name, bufferFromServerTCP);
 			BadTCP(sock);
 			return;
 		}
-		Debug_Message(LOG_INFO, "%s %d передал %.60s", name, DiffTimeSecond(startCycle), bufferFromServerTCP);
+		setToServerTCPStart(true);
+		setGoodTCP(true);
+		setGPRSNeed(false);
 	}
 }

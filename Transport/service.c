@@ -12,8 +12,8 @@
 #include "DebugLogger.h"
 #include <sockets.h>
 #include "Transport.h"
-char confirm[]="confirm=good 012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789";
-//char confirm [ ] = "confirm=good";
+//char confirm[]="confirm=good 012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789";
+char confirm [ ] = "confirm=good";
 
 int Interval = 10;
 int tout = 10;
@@ -84,7 +84,10 @@ int readString(int socket, char *buffer, size_t len, int timeout) {
 		int f = read(socket, buffer, l);
 //		Debug_Message(LOG_INFO, "read %d",f);
 		if (f < 1) {
-			if (DiffTimeSecond(tstart) > timeout) return count;
+			if (DiffTimeSecond(tstart) > timeout){
+				Debug_Message(LOG_ERROR, "Тайм аут по чтению наступил %d",timeout);
+				return count;
+			}
 			osDelay(STEP_CONTROL);
 			continue;
 		}
@@ -104,7 +107,7 @@ void setTimeoutForChanel(int interval){
 	TCPSet tcpSetMain;
 	GetCopy(TCPSetSecName, &tcpSetSec);
 	GetCopy(TCPSetMainName, &tcpSetMain);
-	tcpSetSec.tque=interval+DIFF_INTERVAL;
+	tcpSetSec.tque=interval-DIFF_INTERVAL;
 	tcpSetMain.tque=interval+DIFF_INTERVAL;
 	SetCopy(TCPSetMainName, &tcpSetMain);
 	SetCopy(TCPSetSecName, &tcpSetSec);

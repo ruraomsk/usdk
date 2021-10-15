@@ -8,6 +8,7 @@
 #include <stdlib.h>
 #include "core_json.h"
 #include "CommonData.h"
+
 void clearWeekSet(WeekSet *weekSet) {
 	OneWeek empty;
 	for (int i = 0; i < 7; ++i) {
@@ -46,6 +47,23 @@ char* OneWeekToJsonString(WeekSet *weekSet,int week,char* buffer,size_t size){
 	js_write_end(&jswork);
 	return jswork.start;
 }
+bool OneWeekFromJsonString(char* root, WeekSet *weekSet,int week) {
+	js_read jswork;
+	js_read jsdays;
+	js_read_start(&jswork, root);
+	for (int i = 0; i < MAX_WEEKS ; ++i) {
+		if (weekSet->weeks[i].num!=week) continue;
+		js_read_byte(&jswork, "num",&weekSet->weeks[i].num );
+		if(js_read_array(&jswork, &jsdays, "days")!=JsonSuccess) return false;
+		int j=0;
+		while(js_read_array_byte(&jsdays,j,&weekSet->weeks[i].days[j])==JsonSuccess){
+			j++;
+			if(j>=7) break;
+		}
+		return true;
+	}
+	return false;
+}
 char* WeekSetToJsonString(WeekSet *weekSet,char* buffer,size_t size) {
 	js_write jswork;
 	if (buffer==NULL){
@@ -74,7 +92,7 @@ void WeekSetFromJsonString(char* root, WeekSet *weekSet) {
 	js_read jsdays;
 	js_read objweek;
 	js_read_start(&jswork, root);
-	js_read_array(&jswork, &jswsets, "wsets");
+	if(js_read_array(&jswork, &jswsets, "wsets")!=JsonSuccess) return;
 	for (int i = 0; i < MAX_WEEKS ; ++i) {
 		if (js_read_array_object(&jswsets, i, &objweek)!=JsonSuccess) break;
 		js_read_byte(&objweek, "num",&weekSet->weeks[i].num );

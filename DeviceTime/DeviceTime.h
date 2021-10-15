@@ -19,7 +19,7 @@
 
 typedef struct {
 	osMessageQueueId_t QueueId;
-	uint32_t Signal;
+	uint16_t Signal;
 }CallBackParam;
 
 void DeviceTimeInit();

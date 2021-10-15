@@ -88,6 +88,38 @@ char* OnePKToJsonString(AllPks *apks,int pk,char* buffer,size_t size) {
 	js_write_end(&jswork);
 	return jswork.start;
 }
+bool OnePKFromJsonString(char *root, AllPks *apks,int pk) {
+	js_read jswork;
+	js_read jsstage;
+	js_read jsline;
+
+	js_read_start(&jswork, root);
+	for (int i = 0; i < MAX_PKS; ++i) {
+		if (apks->pks[i].pk!=pk) continue;
+		js_read_int(&jswork, "pk",&apks->pks[i].pk );
+		js_read_int(&jswork, "tpu",&apks->pks[i].tpu );
+		js_read_bool(&jswork, "razlen",&apks->pks[i].razlen );
+		js_read_int(&jswork, "tc",&apks->pks[i].tc );
+		js_read_int(&jswork, "shift",&apks->pks[i].shift );
+		js_read_bool(&jswork, "twot",&apks->pks[i].twot );
+		if(js_read_array(&jswork, &jsstage, "sts")!=JsonSuccess) return false;
+		for (int j = 0; j < MAX_STAGES; ++j) {
+			if(js_read_array_object(&jsstage, j, &jsline)!=JsonSuccess) return false;
+			js_read_int(&jsline, "line",&apks->pks[i].stages[j].line);
+			js_read_int(&jsline, "start",&apks->pks[i].stages[j].start);
+			js_read_int(&jsline, "num",&apks->pks[i].stages[j].num);
+			js_read_int(&jsline, "tf",&apks->pks[i].stages[j].tf);
+			js_read_int(&jsline, "stop",&apks->pks[i].stages[j].stop);
+			js_read_bool(&jsline, "plus",&apks->pks[i].stages[j].plus);
+			js_read_bool(&jsline, "trs",&apks->pks[i].stages[j].trs);
+			js_read_int(&jsline, "dt",&apks->pks[i].stages[j].dt);
+		}
+		return true;
+	}
+	return false;
+}
+
+
 void AllPksFromJsonString(char *root, AllPks *apks) {
 	js_read jswork;
 	js_read jsdk;

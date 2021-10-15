@@ -68,6 +68,11 @@ const osThreadAttr_t MainTask_attributes = {
   .stack_size = 4096 * 4,
   .priority = (osPriority_t) osPriorityRealtime,
 };
+/* Definitions for toServerMessage */
+osMessageQueueId_t toServerMessageHandle;
+const osMessageQueueAttr_t toServerMessage_attributes = {
+  .name = "toServerMessage"
+};
 /* USER CODE BEGIN PV */
 
 
@@ -146,6 +151,10 @@ int main(void)
 	/* start timers, add new ones, ... */
   DeviceTimeInit();
   /* USER CODE END RTOS_TIMERS */
+
+  /* Create the queue(s) */
+  /* creation of toServerMessage */
+  toServerMessageHandle = osMessageQueueNew (16, sizeof(uint16_t), &toServerMessage_attributes);
 
   /* USER CODE BEGIN RTOS_QUEUES */
 	/* add queues, ... */

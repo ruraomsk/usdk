@@ -53,6 +53,8 @@
 #define ETH_RX_BUFFER_SIZE 1524
 /*----- Default Value for LWIP_MPU_COMPATIBLE: 0 ---*/
 #define LWIP_MPU_COMPATIBLE 1
+/*----- Default Value for LWIP_TCPIP_CORE_LOCKING: 0 ---*/
+#define LWIP_TCPIP_CORE_LOCKING 1
 /*----- Default Value for SYS_LIGHTWEIGHT_PROT: 1 ---*/
 #define SYS_LIGHTWEIGHT_PROT 0
 /*----- Value in opt.h for MEM_ALIGNMENT: 1 -----*/

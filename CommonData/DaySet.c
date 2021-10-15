@@ -52,6 +52,27 @@ char* OneDayToJsonString(DaySet *daySet,int day,char* buffer,size_t size) {
 	js_write_end(&jswork);
 	return jswork.start;
 }
+bool OneDayFromJsonString(char *root, DaySet *daySet,int day) {
+	js_read jswork,jslines;
+	js_read objline;
+	js_read_start(&jswork, root);
+	for (int i = 0; i < MAX_DAYS; ++i) {
+		if(daySet->days[i].num!=day) continue;
+		js_read_int(&jswork, "num",&daySet->days[i].num );
+		js_read_int(&jswork, "count",&daySet->days[i].count );
+		if(js_read_array(&jswork, &jslines, "lines")!=JsonSuccess) return false;
+		for (int j = 0; j < MAX_LINES; ++j) {
+			if(js_read_array_object(&jslines, j, &objline)!=JsonSuccess) return false;
+			int min,hour;
+			js_read_int(&objline, "npk",&daySet->days[i].lines[j].npk );
+			js_read_int(&objline, "hour",&hour );
+			js_read_int(&objline, "min",&min );
+			daySet->days[i].lines[j].time=(hour*60)+min;
+		}
+		return true;
+	}
+	return false;
+}
 
 char* DaySetToJsonString(DaySet *daySet,char* buffer,size_t size) {
 	js_write jswork;
@@ -87,7 +108,7 @@ void DaySetFromJsonString(char *root, DaySet *daySet) {
 	js_read objday;
 	js_read objline;
 	js_read_start(&jswork, root);
-	js_read_array(&jswork, &jsdays, "daysets");
+	if(js_read_array(&jswork, &jsdays, "daysets")!=JsonSuccess) return;
 	for (int i = 0; i < MAX_DAYS; ++i) {
 		if (js_read_array_object(&jsdays, i, &objday)!=JsonSuccess) break;
 		js_read_int(&objday, "num",&daySet->days[i].num );

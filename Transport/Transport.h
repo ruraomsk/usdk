@@ -12,6 +12,7 @@
 #include <stddef.h>
 #include <stdbool.h>
 #include "service.h"
+#include "CommonData.h"
 
 #define STEP_TCP 				1000
 #define STEP_GPRS 				20000
@@ -52,7 +53,14 @@ void setToServerGPRSStart(bool v);
 void setGPRSNeed(bool v);
 
 char* doGiveCommand(char* buffer);
+bool doSetCommand(char *buffer);
+bool doControlCommand(char* buffer);
 
+bool isGiveMeCommand(char *buffer);
+bool isSetYouCommand(char *buffer);
+bool isControlCommand(char *buffer);
+
+bool MakeReplay(bool *conn,char* buffer,char* name);
 void setTimeoutForChanel(int interval);
 
 void prepareConnectMessage(char* message);
@@ -62,4 +70,7 @@ void FromServerTCPLoop(void);
 void ToServerTCPLoop(void);
 void FromServerGPRSLoop(void);
 void ToServerGPRSLoop(void);
+
+bool ControlData(char *buffer, YearSet *ys, WeekSet *ws, DaySet *ds, AllPks *pks, PhasesSet *ps);
+
 #endif /* TRANSPORT_H_ */
