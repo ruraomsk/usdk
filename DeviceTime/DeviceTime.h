@@ -32,5 +32,6 @@ void UpdateDeviceTime(time_t time);
 int nanosleep (const struct timespec *tw, struct timespec *tr);
 void CallbackQueue(void* arg);
 long int DiffTimeSecond(time_t start);
+bool isTimeCorrect();
 
 #endif /* DEVICETIME_H_ */

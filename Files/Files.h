@@ -12,6 +12,7 @@ extern "C" {
 #endif
 
 #include <search.h>
+#include "ff.h"
 #include "cmsis_os.h"
 
 int FilesInit(void);

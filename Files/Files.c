@@ -11,6 +11,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <stdbool.h>
 
 #include "DebugLogger.h"
 
@@ -25,7 +26,7 @@ FRESULT result;
 FATFS fs;
 BYTE work[FF_MAX_SS];
 
-static int ReadyFS=0;
+static bool ReadyFS=false;
 int FilesInit() {
 	//Проверим создана ли уже файловая система
 	if(ReadyFS) return 0;
@@ -43,7 +44,7 @@ int FilesInit() {
 	//Это пока ФС на RAM
 	f_mkdir("set");
 	Debug_Message(LOG_INFO, "Файловая система готова");
-	ReadyFS=1;
+	ReadyFS=true;
 	return 0;
 }
 

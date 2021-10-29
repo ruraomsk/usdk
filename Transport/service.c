@@ -18,7 +18,7 @@ char confirm [ ] = "confirm=good";
 int Interval = 10;
 int tout = 10;
 #define MESSAGE_OK "ok"
-#define GIVE_ME_STATUS "give_me_status"
+#define GIVE_ME_STATE "give_me_state"
 #define DIFF_INTERVAL 2
 extern GPSSet gpsSet;
 
@@ -28,7 +28,7 @@ char* MessageConfirm(char* buffer) {
 	return buffer;
 }
 
-char* MessageStatusDevice(char*buffer) {
+char* MessageStateDevice(char*buffer) {
 	*buffer='\0';
 	strcat(buffer, "state=");
 	NowState ns;
@@ -121,13 +121,13 @@ void prepareConnectMessage(char *message) {
 		setTimeoutForChanel(Interval);
 	}
 }
-void prepareGiveMeStatus(char *message){
+void prepareGiveMeState(char *message){
 	char *end;
-	time_t newTime=strtoul(message+sizeof(GIVE_ME_STATUS), &end, 10);
+	time_t newTime=strtoul(message+sizeof(GIVE_ME_STATE), &end, 10);
 	if (!gpsSet.Ok)	UpdateDeviceTime(newTime);
 }
-bool isGive_Me_Status(char *message) {
-	if (strncmp(GIVE_ME_STATUS, message, strlen(GIVE_ME_STATUS)) == 0) return true;
+bool isGive_Me_State(char *message) {
+	if (strncmp(GIVE_ME_STATE, message, strlen(GIVE_ME_STATE)) == 0) return true;
 	return false;
 }
 bool isConnect(char *message) {

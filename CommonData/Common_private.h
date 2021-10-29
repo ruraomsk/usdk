@@ -30,10 +30,10 @@ char *SetupDKToJsonString(void *setupDK,char* buffer,size_t size);
 void SetupDKFromJsonString(char* root, void *setupDK);
 
 void clearWeekSet(void *weekSet);
-char WeekSetToJsonString(void *weekSet,char* buffer,size_t size);
+char* WeekSetToJsonString(void *weekSet,char* buffer,size_t size);
 void WeekSetFromJsonString(char* root, void *weekSet);
 char* OneWeekToJsonString(void *weekSet,int week,char* buffer,size_t size);
-bool OneWeekFromJsonString(char* root, WeekSet *weekSet,int week);
+bool OneWeekFromJsonString(char* root, void *weekSet,int week);
 
 void clearDaySet(void *daySet);
 char* DaySetToJsonString(void *daySet,char* buffer,size_t size);
@@ -46,6 +46,7 @@ char* PhasesSetToJsonString(void *phasesSet,char* buffer,size_t size);
 void PhasesSetFromJsonString(char *root, void *phasesSet);
 char* OnePhaseToJsonString(void *phasesSet,int phase,char* buffer,size_t size);
 bool OnePhaseFromJsonString(char *root, PhasesSet *phasesSet,int phase);
+void setPhase(PhasesSet *phasesSet,DefinePhase ph);
 
 void clearYearSet(void *yearSet);
 char* YearSetToJsonString(void *yearSet,char* buffer,size_t size);
@@ -83,4 +84,11 @@ void clearNowState(void *ns);
 char* NowStateToJsonString(void *ns,char* buffer,size_t size);
 void NowStateFromJsonString(char *root, void *ns);
 
+void clearStatusSet(void *s);
+char* StatusSetToJsonString(void *s,char* buffer,size_t size);
+void StatusSetFromJsonString(char *root, void *s);
+
+void clearErrorSet(void *e);
+char* ErrorSetToJsonString(void *e,char* buffer,size_t size);
+void ErrorSetFromJsonString(char *root, void *e);
 #endif /* COMMON_PRIVATE_H_ */

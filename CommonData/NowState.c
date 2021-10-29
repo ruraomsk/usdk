@@ -36,23 +36,30 @@ char* NowStateToJsonString(NowState* ns,char* buffer,size_t size) {
 		js_write_bool(&w,"IsDUDK2",ns->comdu.IsDUDK2);
 		js_write_bool(&w,"IsReqSFDK1",ns->comdu.IsReqSFDK1);
 		js_write_bool(&w,"IsReqSFDK2",ns->comdu.IsReqSFDK2);
-	js_write_value_end(&w);
+		js_write_int(&w, "pk", ns->comdu.pk);
+		js_write_int(&w, "ck", ns->comdu.ck);
+		js_write_int(&w, "nk", ns->comdu.nk);
+		js_write_int(&w, "phase", ns->comdu.phase);
 
-	js_write_value_start(&w, "dk");
-		js_write_int(&w,"rdk",ns->dk.fdk);
-		js_write_int(&w,"fdk",ns->dk.fdk);
-		js_write_int(&w,"ddk",ns->dk.ddk);
-		js_write_int(&w,"edk",ns->dk.edk);
-		js_write_bool(&w,"pdk",ns->dk.pdk);
-		js_write_int(&w,"eedk",ns->dk.eedk);
-		js_write_bool(&w,"odk",ns->dk.odk);
-		js_write_int(&w,"ldk",ns->dk.ldk);
-		js_write_int(&w,"ftudk",ns->dk.ftudk);
-		js_write_int(&w,"tdk",ns->dk.tdk);
-		js_write_int(&w,"ftsdk",ns->dk.ftsdk);
-		js_write_int(&w,"ttcdk",ns->dk.ttcdk);
 	js_write_value_end(&w);
-
+	js_write_array_start(&w, "dks");
+	for (int i = 0; i < 2; ++i) {
+		js_write_value_start(&w, "");
+			js_write_int(&w,"rdk",ns->dk[i].fdk);
+			js_write_int(&w,"fdk",ns->dk[i].fdk);
+			js_write_int(&w,"ddk",ns->dk[i].ddk);
+			js_write_int(&w,"edk",ns->dk[i].edk);
+			js_write_bool(&w,"pdk",ns->dk[i].pdk);
+			js_write_int(&w,"eedk",ns->dk[i].eedk);
+			js_write_bool(&w,"odk",ns->dk[i].odk);
+			js_write_int(&w,"ldk",ns->dk[i].ldk);
+			js_write_int(&w,"ftudk",ns->dk[i].ftudk);
+			js_write_int(&w,"tdk",ns->dk[i].tdk);
+			js_write_int(&w,"ftsdk",ns->dk[i].ftsdk);
+			js_write_int(&w,"ttcdk",ns->dk[i].ttcdk);
+		js_write_value_end(&w);
+	}
+	js_write_array_end(&w);
 	js_write_end(&w);
 	return w.start;
 	// @formatter:on
@@ -76,20 +83,27 @@ void NowStateFromJsonString(char *root, NowState* ns) {
 		js_read_bool(&c,"IsDUDK2",&ns->comdu.IsDUDK2);
 		js_read_bool(&c,"IsReqSFDK1",&ns->comdu.IsReqSFDK1);
 		js_read_bool(&c,"IsReqSFDK2",&ns->comdu.IsReqSFDK2);
-	js_read d;
-	js_read_value(&w, "dk",&d);
-		js_read_int(&d,"rdk",&ns->dk.fdk);
-		js_read_int(&d,"fdk",&ns->dk.fdk);
-		js_read_int(&d,"ddk",&ns->dk.ddk);
-		js_read_int(&d,"edk",&ns->dk.edk);
-		js_read_bool(&d,"pdk",&ns->dk.pdk);
-		js_read_int(&d,"eedk",&ns->dk.eedk);
-		js_read_bool(&d,"odk",&ns->dk.odk);
-		js_read_int(&d,"ldk",&ns->dk.ldk);
-		js_read_int(&d,"ftudk",&ns->dk.ftudk);
-		js_read_int(&d,"tdk",&ns->dk.tdk);
-		js_read_int(&d,"ftsdk",&ns->dk.ftsdk);
-		js_read_int(&d,"ttcdk",&ns->dk.ttcdk);
+		js_read_int(&c,"pk",&ns->comdu.pk);
+		js_read_int(&c,"ck",&ns->comdu.ck);
+		js_read_int(&c,"nk",&ns->comdu.nk);
+		js_read_int(&c,"phase",&ns->comdu.phase);
+	js_read d,dks;
+	if(js_read_array(&w, &dks, "dks")!=JsonSuccess) return;
+	for (int i = 0; i < 2; ++i) {
+		if(js_read_array_object(&dks,i,&d)!=JsonSuccess) return;
+			js_read_int(&d,"rdk",&ns->dk[i].fdk);
+			js_read_int(&d,"fdk",&ns->dk[i].fdk);
+			js_read_int(&d,"ddk",&ns->dk[i].ddk);
+			js_read_int(&d,"edk",&ns->dk[i].edk);
+			js_read_bool(&d,"pdk",&ns->dk[i].pdk);
+			js_read_int(&d,"eedk",&ns->dk[i].eedk);
+			js_read_bool(&d,"odk",&ns->dk[i].odk);
+			js_read_int(&d,"ldk",&ns->dk[i].ldk);
+			js_read_int(&d,"ftudk",&ns->dk[i].ftudk);
+			js_read_int(&d,"tdk",&ns->dk[i].tdk);
+			js_read_int(&d,"ftsdk",&ns->dk[i].ftsdk);
+			js_read_int(&d,"ttcdk",&ns->dk[i].ttcdk);
+	}
 	// @formatter:on
 }
 

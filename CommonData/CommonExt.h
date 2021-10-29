@@ -29,6 +29,10 @@ typedef struct {
 	bool IsDUDK2;
 	bool IsReqSFDK1;
 	bool IsReqSFDK2;
+	int pk;				//Назначенный ПК
+	int ck;				//Назначенный СК
+	int nk;				//Назначенный НК
+	int phase;			//Назначенная фаза
 }CommandDU;
 typedef struct {
 	int rdk;
@@ -52,7 +56,7 @@ typedef struct{
 	int nk;
 	int tmax;
 	CommandDU comdu;
-	DK dk;
+	DK dk[2];
 }NowState;
 #define NowStateName "nst"
 

@@ -80,7 +80,6 @@ void saveRingBufferToFile() {
 	UnlockFiles();
 }
 void DeviceLog(char subsytem, char *fmt, ...) {
-	return;
 		SubNames *subName = getSubsystem(subsytem);
 		if (subName != NULL) {
 			va_list ap;

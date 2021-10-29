@@ -12,11 +12,11 @@
 #include <stdbool.h>
 
 char* MessageConfirm (char *buffer);
-char* MessageStatusDevice(char *buffer);
+char* MessageStateDevice(char *buffer);
 int sendString(int socket,void* buffer,size_t len);
 int readString(int socket,char* buffer,size_t len,int timeout);
 bool isConnect(char* message);
-bool isGive_Me_Status(char* message);
-void prepareGiveMeStatus(char *message);
+bool isGive_Me_State(char* message);
+void prepareGiveMeState(char *message);
 void setTimeoutForChanel(int interval);
 #endif /* SERVICE_H_ */

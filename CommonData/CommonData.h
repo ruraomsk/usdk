@@ -20,10 +20,17 @@
 #define MAX_STAGES 	24
 #define MAX_CAMERAS 16
 
+#define YellowBlink 	10 	//Желтое мигание
+#define LocalPlane  	0  	//Локальный режим
+#define OffLight		11	//ОС
+#define AllRed			12  //Кругом красный
+#define PromTakt		9	//Фаза Промтакт
 
 //Описание одной фазы со всеми нужными вещами
 typedef struct {
 	int num;
+	int Tmin;  //Минимальная длительность фазы вместе с пром тактом
+	int Tprom; //Промтакт при влючени этой фазы
 	bool work;
 } DefinePhase;
 //Все фазы устройства
@@ -31,6 +38,7 @@ typedef struct {
 	DefinePhase defPhase [ MAX_PHASES ];
 } PhasesSet;
 #define PhasesName "phases"
+#define DK2PhasesName "dk2phs"
 
 //Настройки ДК
 typedef struct {
@@ -94,6 +102,7 @@ typedef struct {
 } Stage;
 //Один план координации
 typedef struct {
+	int dk;
 	int pk;
 	int tpu;
 	bool razlen;
@@ -107,6 +116,7 @@ typedef struct {
 	SetPk pks [ MAX_PKS ];
 } AllPks;
 #define AllPksName "pks"
+#define DK2PksName "pks2"
 
 //Настройки устройства
 typedef struct {
@@ -116,6 +126,8 @@ typedef struct {
 	bool Gps;
 	bool Usb;
 	bool Camera;
+	bool KDU1;
+	bool KDU2;
 } DeviceStatus;
 #define DeviceStatusName "devst"
 //Настройки обмена по TCP
@@ -125,7 +137,7 @@ typedef struct {
 	int tread;
 	int twrite;
 	int tque;
-}TCPSet;
+} TCPSet;
 #define TCPSetMainName "cmain"
 #define TCPSetSecName "csec"
 
@@ -133,22 +145,45 @@ typedef struct {
 typedef struct {
 	int TimeZone;
 	bool Summer;
-}TimeDevice;
+} TimeDevice;
 #define TimeDeviceName "tdev"
 // Описание одной подключенной камеры
 typedef struct {
 	char ip [ 20 ];		//json:"ip"
 	int port;			//json:"port"
 	int id;				//json:"id"
-	char login[20];		//json:"login"
-	char password[20];	//json:"password"
+	char login [ 20 ];		//json:"login"
+	char password [ 20 ];	//json:"password"
 	int chanels;
-}OneCameraConn;
+} OneCameraConn;
 // Все Подключенные камеры
 typedef struct {
-	OneCameraConn cameras[MAX_CAMERAS];		//json:"cameras"
-}CameraSet;
+	OneCameraConn cameras [ MAX_CAMERAS ];		//json:"cameras"
+} CameraSet;
 #define CameraSetName "cam"
+typedef struct {
+	int s220;		// Состояние питания 0 норма  25 - авария 220В 26 - выключен
+	int sGPS;     	// Состояние GPS
+	int sServer;  	// Состояние связи с сервером
+	int sPSPD;    	// Состояние связи с платой ПСПД
+	int elc;      	// Код последней причины разрыва связи
+	bool ethernet; 	// true если связь через Ethernet
+	int tobm;     	// Интервал обмена с сервером (минуты)
+	int lnow;     	// уровень сигнала GSM  в текущей сессии
+	int llast;    	// уровень сигнала GSM  в предыдущей сессии
+	int motiv;    	// Мотив разрыва связи
+}StatusSet;
+#define StatusSetName "status"
+typedef struct{
+	bool V220DK1;  //Срабатывание входа контроля 220В DK1
+	bool V220DK2; //Срабатывание входа контроля 220В DK2
+	bool DRTC;     // Неисправность часов RTC
+	bool DTVP1;     //Неисправность ТВП1
+	bool DTVP2;     //Неисправность ТВП2
+	bool DFRAM;     //Неисправность FRAM
+}ErrorSet;
+#define ErrorSetName "error"
+
 void initCommonData(void);
 void SaveAllChanged(void);
 
@@ -160,7 +195,7 @@ DefinePhase* getPhase(PhasesSet *phasesSet, int num);
 int Compare(char *name, void *data);
 bool GetCopy(char *name, void *data);
 bool SetCopy(char *name, const void *data);
-char* GetJsonString(char *name,char* buffer);
-bool SetJsonString(char *name,char* json);
-char* GetNameFile(char* name);
+char* GetJsonString(char *name, char *buffer);
+bool SetJsonString(char *name, char *json);
+char* GetNameFile(char *name);
 #endif /* COMMONDATA_H_ */

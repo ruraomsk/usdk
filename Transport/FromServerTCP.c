@@ -5,7 +5,7 @@
 #include "sockets.h"
 #include "CommonData.h"
 #include "service.h"
-
+StatusSet ss;
 char bufferFromServerTCP [ MAX_LEN_TCP_MESSAGE ];
 void FromServerTCPLoop(void) {
 	char name [ ] = "FromTCP";
@@ -45,6 +45,7 @@ void FromServerTCPLoop(void) {
 	setGoodTCP(true);
 	setGPRSNeed(false);
 	for (;;) {
+		time_t start=GetDeviceTime();
 		GetCopy(TCPSetMainName, &tcpSet);
 		memset(bufferFromServerTCP, 0, sizeof(bufferFromServerTCP));
 //		Debug_Message(LOG_INFO, "%s Встал на прием ", name);
@@ -65,6 +66,7 @@ void FromServerTCPLoop(void) {
 		setToServerTCPStart(true);
 		setGoodTCP(true);
 		setGPRSNeed(false);
+
 		deleteEnter(bufferFromServerTCP);
 		if(!MakeReplay(&connTcp, bufferFromServerTCP,name)){
 			BadTCP(sock);
@@ -83,5 +85,14 @@ void FromServerTCPLoop(void) {
 		setToServerTCPStart(true);
 		setGoodTCP(true);
 		setGPRSNeed(false);
+		GetCopy(StatusSetName,&ss);
+		ss.ethernet=true;
+		ss.tobm=tcpSet.tque/60;
+		ss.sServer=0;
+		SetCopy(StatusSetName,&ss);
+		ErrorSet es;
+		GetCopy(ErrorSetName,&es);
+		es.DRTC=isTimeCorrect();
+		SetCopy(ErrorSetName,&es);
 	}
 }

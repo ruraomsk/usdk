@@ -7,7 +7,6 @@
 #include "sockets.h"
 #include "Files.h"
 #include "CommonData.h"
-extern osMessageQueueId_t toServerMessageHandle;
 char bufferToServerTCP [ MAX_LEN_TCP_MESSAGE ];
 void ToServerTCPLoop(void) {
 	char name [ ] = "ToSTCP";
@@ -65,48 +64,34 @@ void ToServerTCPLoop(void) {
 		BadTCP(sock);
 		return;
 	}
-	CallBackParam cp;
-	cp.Signal = 1;
-	cp.QueueId = toServerMessageHandle;
-	osTimerId_t keepAlive = osTimerNew(CallbackQueue, osTimerOnce, &cp, NULL);
-	osTimerStart(keepAlive, tcpSet.tque * 1000U);
+	BackEndInit(bufferToServerTCP, name);
 	for (;;) {
-		GetCopy(TCPSetSecName, &tcpSet);
-		uint16_t msg;
-//		Debug_Message(LOG_INFO, "%s встал на прием из очереди", name);
 		if (!isGoodTCP()) {
 			Debug_Message(LOG_ERROR, "%s отключился главный ", name);
 			BadTCP(sock);
-			osTimerStop(keepAlive);
+			BackEndStop();
 			return;
 		}
-		osStatus_t res = osMessageQueueGet(toServerMessageHandle, &msg, NULL, osWaitForever);
-		if (res != osOK) {
+		if (!BackEndStepOne()) {
 			Debug_Message(LOG_ERROR, "%s нет сообщения или сброс ", name);
 			BadTCP(sock);
+			BackEndStop();
 		}
 		if (!isGoodTCP()) {
 			Debug_Message(LOG_ERROR, "%s отключился главный ", name);
 			BadTCP(sock);
-			osTimerStop(keepAlive);
+			BackEndStop();
 			return;
 		}
-		switch (msg) {
-		case 1:
-			MessageStatusDevice(bufferToServerTCP);
-			break;
-		default:
-			break;
+		if(strlen(bufferToServerTCP)>0){
+			err = sendString(sock, bufferToServerTCP, strlen(bufferToServerTCP));
+			if (err < 0) {
+				Debug_Message(LOG_ERROR, "%s Не смог передать строку ответа %.60s", name, bufferToServerTCP);
+				BadTCP(sock);
+				BackEndStop();
+				return;
+			}
 		}
-		err = sendString(sock, bufferToServerTCP, strlen(bufferToServerTCP));
-		if (err < 0) {
-			Debug_Message(LOG_ERROR, "%s Не смог передать строку ответа %.60s", name, bufferToServerTCP);
-			BadTCP(sock);
-			osTimerStop(keepAlive);
-			return;
-		}
-		GetCopy(TCPSetSecName, &tcpSet);
-		osTimerStart(keepAlive, tcpSet.tque * 1000U);
-//		Debug_Message(LOG_INFO, "%s передал %.60s", name, bufferToServerTCP);
+		BackEndStepTwo();
 	}
 }

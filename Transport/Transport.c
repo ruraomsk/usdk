@@ -25,29 +25,14 @@ typedef StaticTask_t osStaticThreadDef_t;
 
 /* Definitions for ToServerTCP */
 osThreadId_t ToServerTCPHandle;
-uint32_t ToServerTCPBuffer[ 4096 ];
-osStaticThreadDef_t ToServerTCPControlBlock;
-const osThreadAttr_t ToServerTCP_attributes = {
-  .name = "ToTCP",
-  .cb_mem = &ToServerTCPControlBlock,
-  .cb_size = sizeof(ToServerTCPControlBlock),
-  .stack_mem = &ToServerTCPBuffer[0],
-  .stack_size = sizeof(ToServerTCPBuffer),
-  .priority = (osPriority_t) osPriorityRealtime,
-};
+const osThreadAttr_t ToServerTCP_attributes = { .name = "ToTCP", .stack_size = 2048 * 4, .priority =
+		(osPriority_t) osPriorityRealtime, };
+/* Definitions for ToServerGPRS */
 
 /* Definitions for FromServerTCP */
 osThreadId_t FromServerTCPHandle;
-uint32_t FromServerTCPBuffer[ 4096 ];
-osStaticThreadDef_t FromServerTCPControlBlock;
-const osThreadAttr_t FromServerTCP_attributes = {
-  .name = "FromTCP",
-  .cb_mem = &FromServerTCPControlBlock,
-  .cb_size = sizeof(FromServerTCPControlBlock),
-  .stack_mem = &FromServerTCPBuffer[0],
-  .stack_size = sizeof(FromServerTCPBuffer),
-  .priority = (osPriority_t) osPriorityRealtime,
-};
+const osThreadAttr_t FromServerTCP_attributes = { .name = "FromTCP", .stack_size = 2048 * 4, .priority =
+		(osPriority_t) osPriorityRealtime, };
 /* Definitions for ToServerGPRS */
 osThreadId_t ToServerGPRSHandle;
 const osThreadAttr_t ToServerGPRS_attributes = { .name = "ToGPRS", .stack_size = 2048 * 4, .priority =
@@ -56,11 +41,6 @@ const osThreadAttr_t ToServerGPRS_attributes = { .name = "ToGPRS", .stack_size =
 osThreadId_t FromServerGPRSHandle;
 const osThreadAttr_t FromServerGPRS_attributes = { .name = "FromGPRS", .stack_size = 2048 * 4, .priority =
 		(osPriority_t) osPriorityRealtime, };
-
-osThreadId_t CamerasHandle;
-const osThreadAttr_t Camera_attributes = { .name = "Camera", .stack_size = 2048 * 4, .priority =
-		(osPriority_t) osPriorityLow7, };
-
 
 extern bool mainConnect;
 
@@ -175,11 +155,6 @@ void TransportStart(void) {
 		/* creation of ToServerGPRS */
 		ToServerGPRSHandle = osThreadNew(StartToServerGPRS, NULL, &ToServerGPRS_attributes);
 	}
-
-	if (devStatus.Camera) {
-		CamerasHandle = osThreadNew(CameraWork, NULL, &Camera_attributes);
-	}
-
 	if (!devStatus.Ethertnet && !devStatus.Gprs) {
 		noETHandGPRS();
 	}

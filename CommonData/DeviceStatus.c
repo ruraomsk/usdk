@@ -11,11 +11,13 @@
 #include "core_json.h"
 
 void clearDeviceStatus(DeviceStatus *ds) {
-	ds->ID=8;
+	ds->ID=1434599;
 	ds->Ethertnet=true;
 	ds->Gprs=false;
 	ds->Gps=true;
 	ds->Usb=true;
+	ds->KDU1=true;
+	ds->KDU2=true;
 	ds->Camera=false;
 }
 
@@ -32,6 +34,8 @@ char* DeviceStatusToJsonString(DeviceStatus *ds,char* buffer,size_t size){
 	js_write_bool(&jswork, "gps",  ds->Gps);
 	js_write_bool(&jswork, "usb",  ds->Usb);
 	js_write_bool(&jswork, "cam",  ds->Camera);
+	js_write_bool(&jswork, "kdu1",  ds->KDU1);
+	js_write_bool(&jswork, "kdu2",  ds->KDU2);
 	js_write_end(&jswork);
 	return jswork.start;
 }
@@ -44,4 +48,6 @@ void DeviceStatusFromJsonString(char *root, DeviceStatus *ds) {
 	js_read_bool(&jswork, "gps", &ds->Gps);
 	js_read_bool(&jswork, "usb", &ds->Usb);
 	js_read_bool(&jswork, "cam", &ds->Camera);
+	js_read_bool(&jswork, "kdu1", &ds->KDU1);
+	js_read_bool(&jswork, "kdu2", &ds->KDU2);
 }

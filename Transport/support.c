@@ -30,9 +30,9 @@ bool MakeReplay(bool *conn,char* buffer,char* name){
 			Debug_Message(LOG_ERROR, "%s ошибка подключения", name);
 			return false;
 		}
-		if (isGive_Me_Status(buffer)) {
-			prepareGiveMeStatus(buffer);
-			MessageStatusDevice(buffer);
+		if (isGive_Me_State(buffer)) {
+			prepareGiveMeState(buffer);
+			MessageStateDevice(buffer);
 			return true;
 		}
 		if(isControlCommand(buffer)){
@@ -97,6 +97,11 @@ bool isGoodGPRS() {
 void BadTCP(int socket) {
 	setGoodTCP(false);
 	setToServerTCPStart(false);
+	StatusSet ss;
+	GetCopy(StatusSetName,&ss);
+	ss.sServer=1;
+	ss.motiv=1;
+	SetCopy(StatusSetName,&ss);
 	if (socket < 0) return;
 	int err=shutdown(socket, SHUT_RDWR);
 	if(err!=0) {

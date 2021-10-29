@@ -10,7 +10,7 @@
 #include "sockets.h"
 
 void ClientModbusTCPLoop(void) {
-	char ipserv[] = "192.168.115.135";
+	char ipserv[] = "127.0.0.1";
 	int port = 502;
 	modbus_t *ctx = modbus_new_tcp(ipserv, port);
 //	uint8_t *query = (uint8_t*) malloc(MODBUS_TCP_MAX_ADU_LENGTH);

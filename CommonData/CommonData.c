@@ -15,6 +15,7 @@
 #include <string.h>
 
 PhasesSet phasesSet;
+PhasesSet dk2phasesSet;
 SetupDK setupDK;
 YearSet yearSet;
 WeekSet weekSet;
@@ -26,22 +27,29 @@ TimeDevice timeDevice;
 GPSSet gpsSet;
 CameraSet cameraSet;
 AllPks allPks;
+AllPks dk2Pks;
 NowState nowState;
+StatusSet statusSet;
+ErrorSet errorSet;
 // @formatter:off
 CommonData cD[] = {
 		{ .name = PhasesName, .data = (void *)&phasesSet, .size = sizeof(PhasesSet), .sbuf = 1200, .to_json =	&PhasesSetToJsonString, .from_json = &PhasesSetFromJsonString,.by_default=&clearPhasesSet},
+		{ .name = DK2PhasesName, .data = (void *)&dk2phasesSet, .size = sizeof(PhasesSet), .sbuf = 1200, .to_json =	&PhasesSetToJsonString, .from_json = &PhasesSetFromJsonString,.by_default=&clearPhasesSet},
 		{ .name = SetupDKName, .data = (void *)&setupDK, .size =sizeof(SetupDK), .sbuf = 120, .to_json = &SetupDKToJsonString, .from_json = &SetupDKFromJsonString,.by_default=&clearSetupDK},
 		{ .name = YearSetName, .data = (void *)&yearSet, .size = sizeof(YearSet), .sbuf = 1200, .to_json =&YearSetToJsonString, .from_json =&YearSetFromJsonString,.by_default=&clearYearSet },
 		{ .name = WeekSetName, .data = (void *)&weekSet, .size = sizeof(WeekSet), .sbuf = 1200, .to_json =&WeekSetToJsonString, .from_json = &WeekSetFromJsonString,.by_default=&clearWeekSet},
 		{ .name = DaySetName, .data = (void *)&daySet, .size =sizeof(DaySet), .sbuf = 4800, .to_json = &DaySetToJsonString, .from_json = &DaySetFromJsonString,.by_default=&clearDaySet },
 		{ .name = DeviceStatusName, .data = (void *)&deviceStatus, .size =sizeof(DeviceStatus), .sbuf = 1200, .to_json = &DeviceStatusToJsonString, .from_json = &DeviceStatusFromJsonString,.by_default=&clearDeviceStatus},
-		{ .name = TCPSetMainName,.data=(void *)&mainTCP,.size=sizeof(TCPSet),.sbuf=80,.to_json=&TCPSetToJsonString,.from_json=&TCPSetFromJsonString,.by_default=&clearTCPSet},
-		{ .name = TCPSetSecName,.data=(void *)&secondTCP,.size=sizeof(TCPSet),.sbuf=80,.to_json=&TCPSetToJsonString,.from_json=&TCPSetFromJsonString,.by_default=&clearTCPSet},
+		{ .name = TCPSetMainName,.data=(void *)&mainTCP,.size=sizeof(TCPSet),.sbuf=120,.to_json=&TCPSetToJsonString,.from_json=&TCPSetFromJsonString,.by_default=&clearTCPSet},
+		{ .name = TCPSetSecName,.data=(void *)&secondTCP,.size=sizeof(TCPSet),.sbuf=120,.to_json=&TCPSetToJsonString,.from_json=&TCPSetFromJsonString,.by_default=&clearTCPSet},
 		{ .name = TimeDeviceName,.data=(void *)&timeDevice,.size=sizeof(TimeDevice),.sbuf=80,.to_json=&TimeDeviceToJsonString,.from_json=&TimeDeviceFromJsonString,.by_default=&clearTimeDevice},
 		{ .name = GPSSetName,.data=(void *)&gpsSet,.size=sizeof(GPSSet),.sbuf=80,.to_json=&GPSSetToJsonString,.from_json=&GPSSetFromJsonString,.by_default=&clearGPSSet},
 		{ .name = CameraSetName,.data=(void *)&cameraSet,.size=sizeof(CameraSet),.sbuf=4800,.to_json=&CameraSetToJsonString,.from_json=&CameraSetFromJsonString,.by_default=&clearCameraSet},
 		{ .name = NowStateName,.data=(void *)&nowState,.size=sizeof(NowState),.sbuf=1200,.to_json=&NowStateToJsonString,.from_json=&NowStateFromJsonString,.by_default=&clearNowState},
 		{ .name = AllPksName,.data=(void *)&allPks,.size=sizeof(AllPks),.sbuf=30000,.to_json=&AllPksToJsonString,.from_json=&AllPksFromJsonString,.by_default=&clearAllPks},
+		{ .name = DK2PksName,.data=(void *)&dk2Pks,.size=sizeof(AllPks),.sbuf=30000,.to_json=&AllPksToJsonString,.from_json=&AllPksFromJsonString,.by_default=&clearAllPks},
+		{ .name = StatusSetName,.data=(void *)&statusSet,.size=sizeof(StatusSet),.sbuf=1200,.to_json=&StatusSetToJsonString,.from_json=&StatusSetFromJsonString,.by_default=&clearStatusSet},
+		{ .name = ErrorSetName,.data=(void *)&errorSet,.size=sizeof(ErrorSet),.sbuf=1200,.to_json=&ErrorSetToJsonString,.from_json=&ErrorSetFromJsonString,.by_default=&clearErrorSet},
 		{ .name =NULL }
 };
 // @formatter:on
@@ -74,6 +82,7 @@ void SaveAllChanged() {
 		snprintf(path, sizeof(path), "set/%s.set", cD [ i ].name);
 		char* json = cD [ i ].to_json(cD [ i ].data,NULL, cD [ i ].sbuf);
 		if (json != NULL) {
+			f_unlink(path);
 			FilesSetJsonString(path, json);
 			cD [ i ].change = false;
 			vPortFree(json);

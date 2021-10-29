@@ -49,6 +49,7 @@ Middlewares/Third_Party/LwIP/src/netif \
 Middlewares/Third_Party/LwIP/src/netif/ppp \
 Middlewares/Third_Party/LwIP/system/OS \
 MobusTCP \
+Technology \
 Transport \
 USB_DEVICE/App \
 USB_DEVICE/Target \

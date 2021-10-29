@@ -56,6 +56,12 @@ char* ShortTimeToString(time_t time) {
 	strftime(bufferTime, sizeof(bufferTime), "%H:%M:%S", u);
 	return bufferTime;
 }
+bool isTimeCorrect(){
+	time_t time=GetDeviceTime();
+	struct tm *u;
+	u = localtime(&time);
+	return u->tm_year>2020;
+}
 
 int nanosleep(const struct timespec *tw, struct timespec *tr) {
 	unsigned long int delay = ((unsigned long int) tw->tv_sec) * 1000UL + ((unsigned long int) tw->tv_nsec / 1000UL);

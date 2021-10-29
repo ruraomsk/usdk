@@ -73,4 +73,9 @@ void ToServerGPRSLoop(void);
 
 bool ControlData(char *buffer, YearSet *ys, WeekSet *ws, DaySet *ds, AllPks *pks, PhasesSet *ps);
 
+void BackEndInit(char* buffer,char* name);
+bool BackEndStepOne();
+bool BackEndStepTwo();
+void BackEndStop();
+
 #endif /* TRANSPORT_H_ */

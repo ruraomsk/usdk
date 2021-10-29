@@ -34,6 +34,7 @@
 #include "Transport.h"
 #include "CommonData.h"
 #include "Camera.h"
+#include <stdbool.h>
 
 /* USER CODE END Includes */
 
@@ -91,8 +92,6 @@ void StartMainTask(void *argument);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-int ReadyETH=false;			//Готовность Ehernet
-int ReadyFiles=false;			//Готовность системы
 /* USER CODE END 0 */
 
 /**
@@ -388,12 +387,11 @@ void StartMainTask(void *argument)
   /* init code for USB_DEVICE */
   MX_USB_DEVICE_Init();
   /* USER CODE BEGIN 5 */
-  ReadyETH=1;
   Debug_Init();
   FilesInit();
   DeviceLogInit();
   initCommonData();
-  ReadyFiles=1;
+  TechnologyInit();
   TransportStart();
   Debug_Message(LOG_INFO, "Система к работе готова");
   for (;;) {

@@ -1,4 +1,5 @@
-netif.c:177:1:netif_init	4	static
+netif.c:151:1:netif_loopif_init	16	static
+netif.c:177:1:netif_init	40	static
 netif.c:217:1:netif_input	16	static
 netif.c:239:1:netif_add_noaddr	40	static
 netif.c:276:1:netif_add	32	static
@@ -18,6 +19,9 @@ netif.c:919:1:netif_set_down	16	static
 netif.c:988:1:netif_set_link_up	16	static
 netif.c:1026:1:netif_set_link_down	16	static
 netif.c:1051:1:netif_set_link_callback	16	static
+netif.c:1077:1:netif_loop_output	32	static
+netif.c:1173:1:netif_loop_output_ipv4	24	static
+netif.c:1198:1:netif_poll	32	static
 netif.c:1619:1:netif_null_output_ip4	24	static
 netif.c:1637:1:netif_name_to_index	24	static
 netif.c:1656:1:netif_index_to_name	24	static

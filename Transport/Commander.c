@@ -13,6 +13,7 @@
 #include "service.h"
 #include <stdio.h>
 #include <stdbool.h>
+#include "getset.h"
 
 typedef struct {
 	char *command;
@@ -22,6 +23,10 @@ typedef struct {
 	char *command;
 	char* (*domit)(char*, int param);
 } multi_command;
+typedef struct {
+	char *command;
+	char* (*dotri)(char*, int dk,int param);
+} triple_command;
 
 typedef struct {
 	char *command;
@@ -32,21 +37,34 @@ typedef struct {
 	bool (*domit)(char*, int param);
 } multi_set;
 typedef struct {
+	char *command;
+	bool (*dotri)(char*, int dk,int param);
+} triple_set;
+
+typedef struct {
 	char* name;
 	void* data;
 }copyData;
+typedef struct{
+	char *name;
+	bool (*doitc)(char*,char*);
+}ctrlCmd;
 bool loadData=false;
 
 extern YearSet yearSet;
 extern WeekSet weekSet;
 extern DaySet  daySet;
 extern AllPks  allPks;
+extern AllPks  dk2Pks;
 extern PhasesSet phasesSet;
+extern PhasesSet dk2phasesSet;
 YearSet copyyearSet;
 WeekSet copyweekSet;
 DaySet  copydaySet;
 AllPks  copyallPks;
+AllPks  copydk2Pks;
 PhasesSet copyphasesSet;
+PhasesSet copydk2phasesSet;
 char* findBegin(char* buffer){
 	char* start=buffer;
 	for (;;) {
@@ -56,98 +74,6 @@ char* findBegin(char* buffer){
 	}
 	return start;
 }
-char* addText(char *text, char *buffer) {
-//	char* buffer=FilesGetJsonString(GetNameFile(text));
-//	if(buffer==NULL) {
-//		Debug_Message(LOG_FATAL, "Нет данных %s",text);
-//		return NULL;
-//	}
-	*buffer = '\0';
-	strcat(buffer, text);
-	strcat(buffer, "=");
-
-	GetJsonString(text, buffer + strlen(buffer));
-//	correctJson(buffer);
-	return buffer;
-}
-char* give_me_SetupDK(char *buffer) {
-	return addText(SetupDKName, buffer);
-}
-bool set_you_SetupDK(char *buffer) {
-	return SetJsonString(SetupDKName, buffer);
-}
-char* give_me_Cameras(char *buffer) {
-	return addText(CameraSetName, buffer);
-}
-bool set_you_Cameras(char *buffer) {
-	return SetJsonString(CameraSetName, buffer);
-}
-char* give_me_TCPMain(char *buffer) {
-	return addText(TCPSetMainName, buffer);
-}
-bool set_you_TCPMain(char *buffer) {
-	return SetJsonString(TCPSetMainName, buffer);
-}
-char* give_me_TCPSec(char *buffer) {
-	return addText(TCPSetSecName, buffer);
-}
-bool set_you_TCPSec(char *buffer) {
-	return SetJsonString(TCPSetSecName, buffer);
-}
-char* give_me_OneMonth(char *buffer, int param) {
-	*buffer = '\0';
-	strcat(buffer, "onemonth");
-	strcat(buffer, "=");
-	OneMonthToJsonString(&yearSet, param, buffer + strlen(buffer), MAX_LEN_TCP_MESSAGE - strlen(buffer));
-	return buffer;
-}
-bool set_you_OneMonth(char *buffer, int param) {
-	return OneMonthFromJsonString(buffer,&copyyearSet,param);
-}
-char* give_me_OneWeek(char *buffer, int param) {
-	*buffer = '\0';
-	strcat(buffer, "oneweek");
-	strcat(buffer, "=");
-	OneWeekToJsonString(&weekSet, param, buffer + strlen(buffer), MAX_LEN_TCP_MESSAGE - strlen(buffer));
-	return buffer;
-}
-bool set_you_OneWeek(char *buffer, int param) {
-	return OneWeekFromJsonString(buffer,&copyweekSet,param);
-}
-
-char* give_me_OneDay(char *buffer, int param) {
-	*buffer = '\0';
-	strcat(buffer, "oneday");
-	strcat(buffer, "=");
-	OneDayToJsonString(&daySet, param, buffer + strlen(buffer), MAX_LEN_TCP_MESSAGE - strlen(buffer));
-	return buffer;
-}
-bool set_you_OneDay(char *buffer, int param) {
-	return OneDayFromJsonString(buffer,&copydaySet,param);
-}
-char* give_me_OnePK(char *buffer, int param) {
-	*buffer = '\0';
-	strcat(buffer, "onepk");
-	strcat(buffer, "=");
-	OnePKToJsonString(&allPks, param, buffer + strlen(buffer), MAX_LEN_TCP_MESSAGE - strlen(buffer));
-	return buffer;
-}
-bool set_you_OnePK(char *buffer, int param) {
-	return OnePKFromJsonString(buffer,&copyallPks,param);
-}
-char* give_me_OnePhase(char *buffer, int param) {
-	*buffer = '\0';
-	strcat(buffer, "onephase");
-	strcat(buffer, "=");
-	OnePhaseToJsonString(&phasesSet, param, buffer + strlen(buffer), MAX_LEN_TCP_MESSAGE - strlen(buffer));
-	return buffer;
-}
-bool set_you_OnePhase(char *buffer, int param) {
-	return OnePhaseFromJsonString(buffer,&copyphasesSet,param);
-}
-
-
-
 // @formatter:off
 // Команды без параметров
 single_command cs[]={
@@ -155,6 +81,9 @@ single_command cs[]={
 				{.command="give-me-Cameras",&give_me_Cameras},
 				{.command="give-me-TCPMain",&give_me_TCPMain},
 				{.command="give-me-TCPSec",&give_me_TCPSec},
+				{.command="give-me-Status",&give_me_Status},
+				{.command="give-me-GPS",&give_me_GPS},
+				{.command="give-me-Error",&give_me_Error},
 				{.command=NULL,NULL},
 };
 single_set ss[]={
@@ -182,34 +111,20 @@ multi_set sm[]={
 				{.command=NULL,NULL},
 };
 copyData cd[]={
-		{.name=YearSetName,(void *)&copyyearSet},
-		{.name=WeekSetName,(void *)&copyweekSet},
-		{.name=DaySetName,(void *)&copydaySet},
-		{.name=AllPksName,(void *)&copyallPks},
-		{.name=PhasesName,(void *)&copyphasesSet},
-		{.name=NULL,NULL},
+				{.name=YearSetName,(void *)&copyyearSet},
+				{.name=WeekSetName,(void *)&copyweekSet},
+				{.name=DaySetName,(void *)&copydaySet},
+				{.name=AllPksName,(void *)&copyallPks},
+				{.name=DK2PksName,(void *)&copydk2Pks},
+				{.name=PhasesName,(void *)&copyphasesSet},
+				{.name=DK2PhasesName,(void *)&copydk2phasesSet},
+				{.name=NULL,NULL},
 };
+
 // @formatter:on
 
-char giveMe[]="give-me-";
-char setYou[]="set-you-";
-char beginChange[]="change-begin";
-char endChange[]="change-end";
-char repeatAgain[]="repeat again";
-bool isGiveMeCommand(char *buffer) {
-	return (strncmp(buffer,giveMe,strlen(giveMe))==0)?true:false;
-}
-bool isSetYouCommand(char *buffer) {
-	return (strncmp(buffer,setYou,strlen(setYou))==0)?true:false;
-}
-bool isControlCommand(char *buffer){
-	if(strncmp(buffer,beginChange,strlen(beginChange))==0) return true;
-	if(strncmp(buffer,endChange,strlen(endChange))==0) return true;
-	if(strncmp(buffer,repeatAgain,strlen(repeatAgain))==0) return true;
-	return false;
-}
-bool doControlCommand(char* buffer){
-	if(strncmp(buffer,beginChange,strlen(beginChange))==0) {
+bool changeCmd(char* param,char* buffer){
+	if(strncmp(param,"begin",strlen("begin"))==0) {
 		for (int i = 0;cd[i].name!=NULL ; ++i) {
 			GetCopy(cd[i].name, cd[i].data);
 		}
@@ -217,22 +132,124 @@ bool doControlCommand(char* buffer){
 		strcpy(buffer,"ready");
 		return true;
 	}
-	if(strncmp(buffer,endChange,strlen(endChange))==0) {
+	if(strncmp(param,"end",strlen("end"))==0) {
 		if(!loadData){
 			strcpy(buffer,"change-begin need");
 			return true;
 		}
-		if(true){
-			ControlData(buffer, &copyyearSet, &copyweekSet,&copydaySet,&copyallPks,&copyphasesSet);
+		if(ControlData(buffer, &copyyearSet, &copyweekSet,&copydaySet,&copyallPks,&copyphasesSet)){
 			for (int i = 0;cd[i].name!=NULL ; ++i) {
 				SetCopy(cd[i].name, cd[i].data);
 			}
 			loadData=false;
+			SaveAllChanged();
 			strcpy(buffer,"allright");
 		}
 		return true;
 	}
-	if(strncmp(buffer,repeatAgain,strlen(repeatAgain))==0) return true;
+	return false;
+}
+bool setSF(char* param,char* buffer){
+	if(strncmp(param,"on",strlen("on"))==0){
+		NowState ns;
+		GetCopy(NowStateName, &ns);
+		ns.comdu.IsReqSFDK1=true;
+		ns.comdu.IsReqSFDK2=true;
+		SetCopy(NowStateName, &ns);
+		strcpy(buffer,"ok");
+		return true;
+	}
+	if(strncmp(param,"off",strlen("off"))==0){
+		NowState ns;
+		GetCopy(NowStateName, &ns);
+		ns.comdu.IsReqSFDK1=false;
+		ns.comdu.IsReqSFDK2=false;
+		SetCopy(NowStateName, &ns);
+		strcpy(buffer,"ok");
+		return true;
+	}
+	return false;
+}
+bool setPK(char* param,char* buffer){
+	int cmd;
+	sscanf(param,"%d",&cmd);
+	NowState ns;
+	GetCopy(NowStateName, &ns);
+
+	SetCopy(NowStateName, &ns);
+	strcpy(buffer,"ok");
+	return true;
+}
+bool setCK(char* param,char* buffer){
+	int cmd;
+	sscanf(param,"%d",&cmd);
+	NowState ns;
+	GetCopy(NowStateName, &ns);
+
+	SetCopy(NowStateName, &ns);
+	strcpy(buffer,"ok");
+	return true;
+}
+bool setNK(char* param,char* buffer){
+	int cmd;
+	sscanf(param,"%d",&cmd);
+	NowState ns;
+	GetCopy(NowStateName, &ns);
+
+	SetCopy(NowStateName, &ns);
+	strcpy(buffer,"ok");
+	return true;
+}
+bool setDU(char* param,char* buffer){
+	int cmd;
+	sscanf(param,"%d",&cmd);
+	NowState ns;
+	GetCopy(NowStateName, &ns);
+
+	SetCopy(NowStateName, &ns);
+	strcpy(buffer,"ok");
+	return true;
+}
+bool repeat(char* param,char* buffer){
+	return true;
+}
+
+
+// @formatter:off
+ctrlCmd cc[]={
+			{.name="change-",&changeCmd},
+			{.name="set-sf-",&setSF},
+			{.name="set-pk-",&setPK},
+			{.name="set-ck-",&setCK},
+			{.name="set-nk-",&setNK},
+			{.name="set-du-",&setDU},
+			{.name="repeat again",&repeat},
+			{.name=NULL,NULL},
+};
+// @formatter:on
+
+char giveMe[]="give-me-";
+char setYou[]="set-you-";
+bool isGiveMeCommand(char *buffer) {
+	return (strncmp(buffer,giveMe,strlen(giveMe))==0)?true:false;
+}
+bool isSetYouCommand(char *buffer) {
+	return (strncmp(buffer,setYou,strlen(setYou))==0)?true:false;
+}
+bool isControlCommand(char *buffer){
+	for (int i = 0;cc [ i ].name != NULL; ++i) {
+		if (strncmp(buffer, cc [ i ].name, strlen(cc [ i ].name)) == 0) {
+			return true;
+		}
+	}
+	return false;
+}
+bool doControlCommand(char* buffer){
+	for (int i = 0;cc [ i ].name != NULL; ++i) {
+		if (strncmp(buffer, cc [ i ].name, strlen(cc [ i ].name)) == 0) {
+			return cc[i].doitc(buffer+strlen(cc [ i ].name),buffer);
+		}
+	}
 	return false;
 }
 char* doGiveCommand(char *buffer) {
