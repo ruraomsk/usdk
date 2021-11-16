@@ -6,11 +6,12 @@
  */
 
 #include "ff.h"
+#include "Shell.h"
 #include <string.h>
 #include <stdio.h>
 
 char fullpath[120];
-
+extern uint8_t UserTxBufferFS [ APP_TX_DATA_SIZE ];
 void makeFullPath(char* path,char* filename){
 	if (filename[0]=='/') {
 		strcpy(fullpath,filename);
@@ -66,24 +67,20 @@ void sendFile(char* path,char* filename,char* buffer){
 		strcat(buffer,fullpath);
 		return;
 	}
-	FSIZE_t size=f_size(fp);
-	char* rbuf = pvPortMalloc(sizeof(size));
-	if (rbuf==NULL){
-		strcpy(buffer,"not memory for file");
-		strcat(buffer,fullpath);
-		f_close(&fp);
-		return;
+	FSIZE_t size=f_size(&fp);
+	while(size>0){
+		FSIZE_t len=(size>APP_TX_DATA_SIZE)?APP_TX_DATA_SIZE:size;
+		r=f_read(&fp, UserTxBufferFS,len, &br);
+		if (r!=FR_OK){
+			strcpy(buffer,"dont read file");
+			strcat(buffer,fullpath);
+			f_close(&fp);
+			return;
+		}
+		writeDataToUsb(UserTxBufferFS, len);
+		size-=len;
 	}
-	r=f_read(&fp, rbuf,size, &br);
 	f_close(&fp);
-	if (r!=FR_OK){
-		strcpy(buffer,"dont read file");
-		strcat(buffer,fullpath);
-		vPortFree(rbuf);
-		return;
-	}
-
-
-	strcpy(buffer,path);
+	strcpy(buffer,"ok");
 }
 

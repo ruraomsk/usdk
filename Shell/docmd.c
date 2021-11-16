@@ -35,10 +35,10 @@ void cmdInit(){
 void sayReady(char* buffer){
 	uint8_t endline [ ] = "\r\n";
 	buffer[0]=0;
-	strcpy(buffer,endline);
+	strcpy(buffer,(char*)endline);
 	strcat(buffer,dir);
 	strcat(buffer,">");
-	CDC_Transmit_FS(buffer, strlen(buffer));
+	CDC_Transmit_FS((uint8_t*)buffer, strlen(buffer));
 }
 parsCmd parserCmd(char* buffer){
 	parsCmd result={.code=0,.param=NULL};
@@ -66,8 +66,9 @@ void doCmd(char* buffer){
 			return;
 		case 4:
 			sendFile(dir,cmd.param,buffer);
+			return;
 		default:
-			strcat(buffer,"command not found");
+			strcat(buffer," command not found");
 			return;
 	}
 
