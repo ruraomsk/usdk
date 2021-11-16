@@ -21,7 +21,7 @@ bool TCPError = false;
 bool GPRSError = false;
 
 
-typedef StaticTask_t osStaticThreadDef_t;
+//typedef StaticTask_t osStaticThreadDef_t;
 
 /* Definitions for ToServerTCP */
 osThreadId_t ToServerTCPHandle;

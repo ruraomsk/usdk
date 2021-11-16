@@ -22,7 +22,6 @@
 #include "cmsis_os.h"
 #include "lwip.h"
 #include "usb_device.h"
-#include "usb_device.h"
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
@@ -32,8 +31,10 @@
 #include "DeviceTime.h"
 #include "DeviceLogger.h"
 #include "Transport.h"
+#include "Technology.h"
 #include "CommonData.h"
 #include "Camera.h"
+#include "Shell.h"
 #include <stdbool.h>
 
 /* USER CODE END Includes */
@@ -45,7 +46,6 @@
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
-
 
 #define STEP_SHARE 				100000
 #define STEP_SERVER_MODBUS_TCP 	1000
@@ -75,8 +75,6 @@ const osMessageQueueAttr_t toServerMessage_attributes = {
   .name = "toServerMessage"
 };
 /* USER CODE BEGIN PV */
-
-
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -92,6 +90,7 @@ void StartMainTask(void *argument);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
+char bufferCDC [ 128 ];
 /* USER CODE END 0 */
 
 /**
@@ -148,7 +147,7 @@ int main(void)
 
   /* USER CODE BEGIN RTOS_TIMERS */
 	/* start timers, add new ones, ... */
-  DeviceTimeInit();
+	DeviceTimeInit();
   /* USER CODE END RTOS_TIMERS */
 
   /* Create the queue(s) */
@@ -157,7 +156,6 @@ int main(void)
 
   /* USER CODE BEGIN RTOS_QUEUES */
 	/* add queues, ... */
-
 
   /* USER CODE END RTOS_QUEUES */
 
@@ -180,8 +178,6 @@ int main(void)
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
 	while (1) {
-//		osDelay(DeviceTimeStep);
-//		UpdateDeviceTime();
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
@@ -374,10 +370,10 @@ static void MX_GPIO_Init(void)
 
 /* USER CODE BEGIN Header_StartMainTask */
 /**
-  * @brief  Function implementing the MainTask thread.
-  * @param  argument: Not used
-  * @retval None
-  */
+ * @brief  Function implementing the MainTask thread.
+ * @param  argument: Not used
+ * @retval None
+ */
 /* USER CODE END Header_StartMainTask */
 void StartMainTask(void *argument)
 {
@@ -389,14 +385,16 @@ void StartMainTask(void *argument)
   /* USER CODE BEGIN 5 */
   Debug_Init();
   FilesInit();
+  InitShell();
   DeviceLogInit();
   initCommonData();
   TechnologyInit();
   TransportStart();
   Debug_Message(LOG_INFO, "Система к работе готова");
-  for (;;) {
-	  DebugLoggerLoop();
-	  osDelay(1000);
+  /* Infinite loop */
+  for(;;)
+  {
+	  osDelay(1000U);
   }
   /* USER CODE END 5 */
 }

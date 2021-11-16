@@ -80,7 +80,7 @@ void USDKWork(void* arg){
 		if (os.TLen) os.TLen--;
 	}
 	memset(&os,0,sizeof(OneStep));
-	snprintf(name,9,"KDU%d",susdk->nomer);
+	snprintf(name,sizeof(name)-1,"KDU%d",susdk->nomer);
 	makeKDU(susdk, &skdu);
 	osThreadAttr_t KDU_attributes = {  .stack_size = 2048 * 4, .priority =(osPriority_t) osPriorityRealtime, };
 	KDU_attributes.name=name;

@@ -21,7 +21,7 @@ void Debug_Init(void);
 void Debug_Message(int level,char *fmt,...);
 char *Debuger_Status(int level);
 
-void DebugLoggerLoop(void);
+void DebugLoggerLoop(void* arg);
 
 void CrashMemory();
 #define LOG_FATAL 0

@@ -17,10 +17,14 @@
 #include <sockets.h>
 #define SIZE_LOGGER_BUFFER 200
 osMessageQueueId_t DebugLoggerQueue;
+osThreadAttr_t Debug_attributes = {  .stack_size = 2048 * 4, .priority =(osPriority_t) osPriorityRealtime,.name="deblog" };
+
 char LoggerBuffer [ SIZE_LOGGER_BUFFER ];
 #define LIMIT_DEBUG_LOGGER_SIZE_Kb  5
 void Debug_Init() {
 	DebugLoggerQueue = osMessageQueueNew(128, sizeof(DebugLoggerMsg), NULL);
+	osThreadNew(DebugLoggerLoop, 0, &Debug_attributes);
+
 }
 HeapStats_t pxHeapStats;
 void Debug_Message(int level, char *fmt, ...) {
@@ -52,10 +56,10 @@ char* Debuger_Status(int level) {
 }
 
 DebugLoggerMsg dlmsg;
-void DebugLoggerLoop() {
+void DebugLoggerLoop(void *arg) {
 
-	FIL flog;
-	UINT bw;
+//	FIL flog;
+//	UINT bw;
 	struct sockaddr_in server;
 	int sock = -1;
 	server.sin_family = AF_INET;

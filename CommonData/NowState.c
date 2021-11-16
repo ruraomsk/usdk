@@ -57,6 +57,7 @@ char* NowStateToJsonString(NowState* ns,char* buffer,size_t size) {
 			js_write_int(&w,"tdk",ns->dk[i].tdk);
 			js_write_int(&w,"ftsdk",ns->dk[i].ftsdk);
 			js_write_int(&w,"ttcdk",ns->dk[i].ttcdk);
+			js_write_int(&w,"exts",ns->dk[i].exts);
 		js_write_value_end(&w);
 	}
 	js_write_array_end(&w);
@@ -103,6 +104,7 @@ void NowStateFromJsonString(char *root, NowState* ns) {
 			js_read_int(&d,"tdk",&ns->dk[i].tdk);
 			js_read_int(&d,"ftsdk",&ns->dk[i].ftsdk);
 			js_read_int(&d,"ttcdk",&ns->dk[i].ttcdk);
+			js_read_int(&d,"exts",&ns->dk[i].exts);
 	}
 	// @formatter:on
 }
